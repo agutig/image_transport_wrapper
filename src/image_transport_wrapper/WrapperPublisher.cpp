@@ -99,6 +99,7 @@ void WrapperPublisher::imageCallback(const sensor_msgs::msg::Image::ConstSharedP
 {
   // Publish the image using the publisher created with ImageTransport
   if (publisher_.getNumSubscribers() > 0) {
+    std::cout << "Pasa por aqui" << std::endl;
     publisher_.publish(msg);
   }
 }

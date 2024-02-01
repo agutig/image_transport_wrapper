@@ -35,6 +35,19 @@
 #include "image_transport_wrapper/WrapperPublisher.hpp"
 
 int main(int argc, char * argv[])
+  /*
+  Esta funcion llama al objeto wrapper en src/image_transport_wrapper/WrapperPublisher.cpp.
+
+  Se encarga de conectarse a un topic de imagen raw y publicarlo en otro (sin modificaciones?)
+  
+
+  Se puede llamar como:
+  ros2 run image_transport_wrapper wrapper_publisher --ros-args -p topic_in:=/camera/image_raw -p topic_out:=/out/image
+
+
+  
+  
+  */
 {
   rclcpp::init(argc, argv);
 
