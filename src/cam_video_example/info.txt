@@ -1,0 +1,3 @@
+This package launches different examples of video in different topics:
+
+    * camera_publisher: Publish just the video data of the cam on the topic camera_image

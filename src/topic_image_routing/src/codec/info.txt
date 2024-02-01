@@ -1,0 +1,1 @@
+This is a small video codec for testing :)
