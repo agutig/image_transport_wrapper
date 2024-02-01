@@ -36,24 +36,6 @@ ament_target_dependencies(wrapper_publisher ${dependencies})
 target_link_libraries(wrapper_publisher ${PROJECT_NAME})
 
 
-# add the subscriber example
-add_executable(image_subscriber src/image_subscriber.cpp)
-target_link_libraries(image_subscriber
-  cv_bridge::cv_bridge
-  image_transport::image_transport
-  opencv_highgui
-  rclcpp::rclcpp
-)
-
-# add the subscriber example
-add_executable(image_publisher src/image_publisher.cpp)
-target_link_libraries(image_publisher
-  cv_bridge::cv_bridge
-  image_transport::image_transport
-  opencv_highgui
-  rclcpp::rclcpp
-)
-
 install(TARGETS wrapper_publisher image_subscriber image_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
