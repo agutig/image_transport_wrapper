@@ -36,7 +36,7 @@ ament_target_dependencies(wrapper_publisher ${dependencies})
 target_link_libraries(wrapper_publisher ${PROJECT_NAME})
 
 
-install(TARGETS wrapper_publisher image_subscriber image_publisher
+install(TARGETS wrapper_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
 
