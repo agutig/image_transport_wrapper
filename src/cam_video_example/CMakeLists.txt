@@ -15,12 +15,17 @@ find_package(OpenCV REQUIRED)
 add_executable(camera_publisher src/camera_publisher.cpp)
 ament_target_dependencies(camera_publisher rclcpp sensor_msgs image_transport cv_bridge OpenCV)
 
+add_executable(camera_depth_publisher src/camera_depth_publisher.cpp)
+ament_target_dependencies(camera_depth_publisher rclcpp sensor_msgs image_transport cv_bridge OpenCV)
+
 install(TARGETS
   camera_publisher
+  camera_depth_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
 
 target_link_libraries(camera_publisher curl)
+target_link_libraries(camera_depth_publisher curl)
 
 
 if(BUILD_TESTING)

@@ -1,13 +1,14 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include "depth_codec/depth_codec.hpp"
 
-const std::string TOPIC_IN = "camera_image";
-const std::string TOPIC_OUT = "new_camera_image";
+const std::string TOPIC_IN = "depth_server_camera_image";
+const std::string TOPIC_OUT = "depth_client_camera_image";
 
-class topic_image_routing : public rclcpp::Node
+class depth_codec_server : public rclcpp::Node
 {
 public:
-  topic_image_routing() : Node("topic_image_routing")
+  depth_codec_server() : Node("depth_codec_server")
   {
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
@@ -23,8 +24,11 @@ public:
     subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
       TOPIC_IN, qos,
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
+
         RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
-        publisher_->publish(*msg);
+        auto codec_msg = to_decode_frame(msg);
+
+        publisher_->publish(*codec_msg);
       });
   }
 
@@ -36,7 +40,7 @@ private:
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<topic_image_routing>());
+  rclcpp::spin(std::make_shared<depth_codec_server>());
   rclcpp::shutdown();
   return 0;
 }
