@@ -1,6 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
-#include "depth_codec/depth_codec.hpp"
+#include "advanced_depth_codec/advanced_depth_codec.hpp"
 
 const std::string TOPIC_IN = "depth_camera_image";
 const std::string TOPIC_OUT = "depth_server_camera_image";
@@ -12,6 +12,8 @@ public:
   {
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
+
+    this -> declare_parameter<float>("compression_k", 1.2); //Make this value bigger for higher compression
 
     // Define the QoS profile
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
@@ -26,7 +28,9 @@ public:
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
 
         RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
-        auto codec_msg = to_code_frame(msg);
+        float compression_k = 1;
+        this -> get_parameter("compression_k", compression_k);
+        auto codec_msg = to_code_frame(msg ,compression_k) ;
 
         publisher_->publish(*codec_msg);
       });

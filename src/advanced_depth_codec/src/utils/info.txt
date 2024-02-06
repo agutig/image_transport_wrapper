@@ -1,0 +1,6 @@
+This is a basic small depht video codec for testing. 
+The server only takes a raw depht video (one dimentional image stream in 16 bits) 
+from depth_camera_image, inverts the colors and sends it throug depth_server_camera_image.
+
+After that, the client suvbscribes to depth_server_camera_image and applies the color inversion to obtain 
+again the original video.
