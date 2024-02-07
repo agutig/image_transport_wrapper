@@ -1,7 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "advanced_depth_codec/advanced_depth_codec.hpp"
-#include "advanced_depth_codec/msg/RLEimg.hpp"
+#include "advanced_depth_codec/msg/Rleimg.hpp"
 
 const std::string TOPIC_IN = "depth_camera_image";
 const std::string TOPIC_OUT = "depth_server_camera_image";

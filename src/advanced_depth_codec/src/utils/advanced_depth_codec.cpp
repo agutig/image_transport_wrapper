@@ -1,10 +1,10 @@
 #include "advanced_depth_codec/advanced_depth_codec.hpp"  // Asegúrate de que el include sea correcto
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/msg/image.hpp>
-#include "advanced_depth_codec/msg/RLEimg.hpp"
 #include <memory>
 #include <opencv2/opencv.hpp>
 #include "rclcpp/rclcpp.hpp"
+#include "advanced_depth_codec/msg/Rleimg.hpp"
 
 cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     // Ensure the image is in mono16 format
@@ -40,7 +40,7 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     return finalImage;
 }
 
-advanced_depth_codec::msg::RLEimg DCT_to_RLE(const cv::Mat& dctImage) {
+advanced_depth_codec::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     // Esta función asume que dctImage es una matriz cuadrada
     int n = dctImage.rows; // Asumiendo que dctImage es cuadrada
 
@@ -131,7 +131,7 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
     return dctImage;
 }
 
-std::shared_ptr<sensor_msgs::msg::Image> to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
+advanced_depth_codec::msg::Rleimg to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
     // Convertir el mensaje ROS a una imagen OpenCV
     cv_bridge::CvImagePtr cv_ptr;
     try {

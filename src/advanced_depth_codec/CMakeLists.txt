@@ -13,15 +13,15 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-set(msg_files
-  "msg/RLEimg.msg"
-)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
+"msg/Rleimg.msg" 
 )
 
+
+
 ament_export_dependencies(rosidl_default_runtime)
+
 
 include_directories(
   include  
@@ -32,9 +32,11 @@ include_directories(
 add_executable(advanced_depth_codec_server src/advanced_depth_codec_server.cpp src/utils/advanced_depth_codec.cpp)
 add_executable(advanced_depth_codec_client src/advanced_depth_codec_client.cpp src/utils/advanced_depth_codec.cpp)
 
-ament_target_dependencies(advanced_depth_codec_server rclcpp sensor_msgs cv_bridge OpenCV)
-ament_target_dependencies(advanced_depth_codec_client rclcpp sensor_msgs cv_bridge OpenCV)
-   
+ament_target_dependencies(advanced_depth_codec_server rclcpp sensor_msgs cv_bridge OpenCV )
+ament_target_dependencies(advanced_depth_codec_client rclcpp sensor_msgs cv_bridge OpenCV )
+
+
+
 install(TARGETS
   advanced_depth_codec_server
   advanced_depth_codec_client
