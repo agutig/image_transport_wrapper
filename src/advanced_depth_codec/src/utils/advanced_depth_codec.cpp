@@ -1,6 +1,7 @@
 #include "advanced_depth_codec/advanced_depth_codec.hpp"  // Asegúrate de que el include sea correcto
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/msg/image.hpp>
+#include "advanced_depth_codec/msg/RLEimg.hpp"
 #include <memory>
 #include <opencv2/opencv.hpp>
 #include "rclcpp/rclcpp.hpp"
@@ -39,6 +40,97 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     return finalImage;
 }
 
+advanced_depth_codec::msg::RLEimg DCT_to_RLE(const cv::Mat& dctImage) {
+    // Esta función asume que dctImage es una matriz cuadrada
+    int n = dctImage.rows; // Asumiendo que dctImage es cuadrada
+
+    std::vector<float> rle_values;
+    std::vector<int> rle_counts;
+    float previousValue = 0;
+    int runLength = 0;
+
+    int i = 0, j = 0;
+    int direction = 1; // 1 para arriba, -1 para abajo
+
+    // Recorrido en zigzag
+    for (int k = 0; k < n * n; ++k) {
+        float currentValue = dctImage.at<float>(i, j);
+
+        // Si es el primer valor o es diferente al valor anterior, se inicia un nuevo conteo
+        if (k == 0 || currentValue != previousValue) {
+            if (k != 0) {
+                rle_values.push_back(previousValue);  // Añadir el valor al vector de valores RLE
+                rle_counts.push_back(runLength);      // Añadir el conteo al vector de conteos RLE
+            }
+            previousValue = currentValue;
+            runLength = 1;
+        } else {
+            // Si es el mismo valor, incrementar el contador
+            runLength++;
+        }
+
+        // Moverse en zigzag
+        if (direction == 1) {
+            if (j == n - 1) { i++, direction = -1; } // Cambio de dirección en la última columna
+            else if (i == 0) { j++, direction = -1; } // Cambio de dirección en la primera fila
+            else { i--, j++; }
+        } else {
+            if (i == n - 1) { j++, direction = 1; } // Cambio de dirección en la última fila
+            else if (j == 0) { i++, direction = 1; } // Cambio de dirección en la primera columna
+            else { i++, j--; }
+        }
+
+        // Si es el último valor, asegurarse de añadirlo a los vectores RLE
+        if (k == n * n - 1) {
+            rle_values.push_back(currentValue);  // Añadir el valor al vector de valores RLE
+            rle_counts.push_back(runLength);     // Añadir el conteo al vector de conteos RLE
+        }
+    }
+
+    // Construir el mensaje RLEImage con los vectores y dimensiones originales
+    my_package::msg::RLEImage rle_image_msg;
+    rle_image_msg.original_width = n;
+    rle_image_msg.original_height = n; // O utiliza la altura real si la imagen no es cuadrada
+    rle_image_msg.rle_values = rle_values;
+    rle_image_msg.rle_counts = rle_counts;
+
+    return rle_image_msg;
+}
+
+cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int width, int height) {
+    cv::Mat dctImage = cv::Mat::zeros(height, width, CV_32F);
+    
+    int i = 0, j = 0;
+    int direction = 1; // 1 para arriba, -1 para abajo
+    int rleIndex = 0; // Índice para la secuencia RLE
+
+    // Recorrer la secuencia RLE y reconstruir la matriz DCT
+    for (int k = 0; k < rleStream.size(); ++k) {
+        auto value = rleStream[k].first;
+        int count = rleStream[k].second;
+
+        while (count > 0) {
+            // Asignar el valor actual de RLE al elemento correspondiente en la matriz DCT
+            dctImage.at<float>(i, j) = value;
+
+            // Moverse en zigzag
+            if (direction == 1) {
+                if (j == width - 1) { i++, direction = -1; } // Cambio de dirección en la última columna
+                else if (i == 0) { j++, direction = -1; } // Cambio de dirección en la primera fila
+                else { i--, j++; }
+            } else {
+                if (i == height - 1) { j++, direction = 1; } // Cambio de dirección en la última fila
+                else if (j == 0) { i++, direction = 1; } // Cambio de dirección en la primera columna
+                else { i++, j--; }
+            }
+
+            count--;
+        }
+    }
+
+    return dctImage;
+}
+
 std::shared_ptr<sensor_msgs::msg::Image> to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
     // Convertir el mensaje ROS a una imagen OpenCV
     cv_bridge::CvImagePtr cv_ptr;
@@ -54,10 +146,10 @@ std::shared_ptr<sensor_msgs::msg::Image> to_code_frame(const sensor_msgs::msg::I
     //mat = 65535 - mat;  // Invertir colores para una imagen de 16 bits
     mat = DCT_coding(mat, compression_k);
 
-    // Convertir la imagen OpenCV procesada de vuelta a un mensaje ROS
-    auto processed_image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", mat).toImageMsg();
+    rle_msg = DCT_to_RLE(mat);
 
-    return processed_image_msg;
+
+    return rle_msg;
 }
 
 
