@@ -1,7 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "advanced_depth_codec/advanced_depth_codec.hpp"
-#include "advanced_depth_codec/msg/Rleimg.hpp"
+#include "coded_interfaces/msg/rleimg.hpp"
 
 const std::string TOPIC_IN = "depth_camera_image";
 const std::string TOPIC_OUT = "depth_server_camera_image";
@@ -23,7 +23,7 @@ public:
     qos.history(RMW_QOS_POLICY_HISTORY_KEEP_LAST);
     qos.keep_last(1);
 
-    publisher_ = this->create_publisher<advanced_depth_codec::msg::RLEimg>(TOPIC_OUT, qos);
+    publisher_ = this->create_publisher<coded_interfaces::msg::Rleimg>(TOPIC_OUT, qos);
     subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
       TOPIC_IN, qos,
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
@@ -38,7 +38,7 @@ public:
   }
 
 private:
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
+  rclcpp::Publisher<coded_interfaces::msg::Rleimg>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
 };
 

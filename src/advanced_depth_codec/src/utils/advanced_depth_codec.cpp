@@ -4,7 +4,7 @@
 #include <memory>
 #include <opencv2/opencv.hpp>
 #include "rclcpp/rclcpp.hpp"
-#include "advanced_depth_codec/msg/Rleimg.hpp"
+#include "coded_interfaces/msg/rleimg.hpp"
 
 cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     // Ensure the image is in mono16 format
@@ -40,7 +40,7 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     return finalImage;
 }
 
-advanced_depth_codec::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
+coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     // Esta función asume que dctImage es una matriz cuadrada
     int n = dctImage.rows; // Asumiendo que dctImage es cuadrada
 
@@ -88,7 +88,7 @@ advanced_depth_codec::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     }
 
     // Construir el mensaje RLEImage con los vectores y dimensiones originales
-    my_package::msg::RLEImage rle_image_msg;
+    coded_interfaces::msg::Rleimg rle_image_msg;
     rle_image_msg.original_width = n;
     rle_image_msg.original_height = n; // O utiliza la altura real si la imagen no es cuadrada
     rle_image_msg.rle_values = rle_values;
@@ -102,7 +102,6 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
     
     int i = 0, j = 0;
     int direction = 1; // 1 para arriba, -1 para abajo
-    int rleIndex = 0; // Índice para la secuencia RLE
 
     // Recorrer la secuencia RLE y reconstruir la matriz DCT
     for (int k = 0; k < rleStream.size(); ++k) {
@@ -131,7 +130,7 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
     return dctImage;
 }
 
-advanced_depth_codec::msg::Rleimg to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
+std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
     // Convertir el mensaje ROS a una imagen OpenCV
     cv_bridge::CvImagePtr cv_ptr;
     try {
@@ -146,10 +145,10 @@ advanced_depth_codec::msg::Rleimg to_code_frame(const sensor_msgs::msg::Image::S
     //mat = 65535 - mat;  // Invertir colores para una imagen de 16 bits
     mat = DCT_coding(mat, compression_k);
 
-    rle_msg = DCT_to_RLE(mat);
+    auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat));
 
 
-    return rle_msg;
+    return rle_msg_ptr;
 }
 
 
