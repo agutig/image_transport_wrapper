@@ -11,7 +11,14 @@
 
 std::vector<double> DCT_2_zigzag(const cv::Mat& dctImage) {
 
+    /*
+    This function recibes a matrix (an DCT transformed image) and scans it in a zigzag structure
+    returning in a flat vector.
 
+    Visual explanation:
+    https://www.researchgate.net/publication/288182261/figure/fig2/AS:311005201616897@1451160826228/ZigZag-Scan-Ordering-of-Baseline-JPEG.png
+    
+    */
 
     const int max_width = dctImage.cols; //1280
     const int max_height = dctImage.rows;  //720
@@ -59,10 +66,30 @@ std::vector<double> DCT_2_zigzag(const cv::Mat& dctImage) {
 }
 
 cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
+
+    /*
+    This function recibes an imgage an aplies an recuantification toconvert from 16
+    to 8 and a 2DCT transform to it.
+    
+    this spectrum matrix its rounded to 2 decimals to make the coefficients as regular as possible.
+
+    Finally, to maximize compresion, in a row/colum square patternt we
+    put to 0 the rows and columns more distant to the left-upper square.
+    This process its ligated to the compression factor compression_k and
+    as this factor gets bigger, it would also increase the zero's area.
+
+    */
     // Ensure the image is in mono16 format
     if (inputImage.type() != CV_16UC1) {
         throw std::runtime_error("Unsupported image type. Expected mono16.");
     }
+
+
+    //Recuantificacion de imagen de 16bits a 8 bits
+    cv::Mat image8UC1;
+    double minVal, maxVal;
+    cv::minMaxLoc(inputImage, &minVal, &maxVal); // Encuentra los valores mínimos y máximos
+    inputImage.convertTo(image8UC1, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
 
     // Convert the image to floating-point for DCT processing
     cv::Mat floatImage;
@@ -72,6 +99,13 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     cv::Mat dctImage;
     cv::dct(floatImage, dctImage);
 
+    //Recuantificacion a nivel frecuencial (truncamiento decimales)
+    // Convierte los valores a enteros para eliminar los decimales y Convierte de vuelta a flotantes
+    dctImage.convertTo(dctImage, CV_32S);
+    dctImage.convertTo(dctImage, CV_32F);
+
+
+    // Forzar a 0 las ultimas/columnas
     // Calcular las dimensiones para mantener los coeficientes
     int keepWidth = dctImage.cols * 1 / compression_k;
     int keepHeight = dctImage.rows * 1 / compression_k;
@@ -81,18 +115,19 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     roi.setTo(cv::Scalar(1));
     dctImage = dctImage.mul(mask);
 
-    // Apply IDCT to reconstruct the image
-    //cv::Mat processedImage;
-    //cv::idct(dctImage, processedImage);
-
-    // Convert the processed image back to mono16
-    //cv::Mat finalImage;
-    //processedImage.convertTo(finalImage, CV_16U);
 
     return dctImage;
 }
 
 coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
+
+
+    /*
+    This funtio tranform a DCT matriz to a two-vetor RLE codification
+    (one vector indicates the value, the other counts the number of repetitions)
+    and encapsulates it directly into a rleimg message
+    */
+
     // Esta función asume que dctImage es una matriz cuadrada
 
     std::vector<float> rle_values;
@@ -136,8 +171,15 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
 }
 
 cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int width, int height) {
+
+    /*
+    This function recives an rle codification (both vectors), rle values and rle counts wich contains
+    the simbol and the number of times it repeats. After that it reorganises it into a matrix following
+    the zigzag pattern.
+    */
+
+
     cv::Mat dctImage = cv::Mat::zeros(height, width, CV_32F);
-    
     int i = 0, j = 0;
     int direction = 1; // 1 para arriba, -1 para abajo
 
@@ -169,7 +211,10 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
 }
 
 std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
-    // Convertir el mensaje ROS a una imagen OpenCV
+    /*
+    Codes a msg image into a rleimg message wich contais an encoded version of an image into a process of compresion and
+    a rle codification.
+    */
 
     cv_bridge::CvImagePtr cv_ptr;
     try {
@@ -189,6 +234,10 @@ std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::m
 
 
 std::shared_ptr<sensor_msgs::msg::Image> to_decode_frame(const coded_interfaces::msg::Rleimg::SharedPtr& msg) {
+
+    /*
+    Decodes an rleimg msg into a regular img msg ready to visualizate
+    */
     int width = msg->original_width;
     int height = msg->original_height;
 

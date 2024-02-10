@@ -1,4 +1,4 @@
-# RLEimg.msg
+# Rleimg.msg
 
 # Original image size
 uint32 original_width

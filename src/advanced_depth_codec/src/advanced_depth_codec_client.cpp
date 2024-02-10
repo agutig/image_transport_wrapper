@@ -8,6 +8,8 @@ const std::string TOPIC_OUT = "depth_client_camera_image";
 
 class advanced_depth_codec_client : public rclcpp::Node
 {
+//This node calls a codec client for an coded depth video (rleimg msg) and decodes it into an ordinary video (msg/image secuence).
+
 public:
   advanced_depth_codec_client() : Node("advanced_depth_codec_client")
   {
@@ -27,9 +29,9 @@ public:
       [this](coded_interfaces::msg::Rleimg::SharedPtr msg) {
 
         RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
-        auto codec_msg = to_decode_frame(msg);
+        auto decoded_msg = to_decode_frame(msg);
 
-        publisher_->publish(*codec_msg);
+        publisher_->publish(*decoded_msg);
       });
   }
 
