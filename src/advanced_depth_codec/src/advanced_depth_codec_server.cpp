@@ -29,11 +29,12 @@ public:
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
 
         RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
+
         float compression_k = 1;
         this -> get_parameter("compression_k", compression_k);
         auto codec_msg = to_code_frame(msg ,compression_k) ;
-
         publisher_->publish(*codec_msg);
+        
       });
   }
 

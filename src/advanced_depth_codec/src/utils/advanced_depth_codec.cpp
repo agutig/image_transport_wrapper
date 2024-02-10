@@ -10,8 +10,11 @@
 
 
 std::vector<double> DCT_2_zigzag(const cv::Mat& dctImage) {
-    const int max_width = dctImage.cols;
-    const int max_height = dctImage.rows;
+
+
+
+    const int max_width = dctImage.cols; //1280
+    const int max_height = dctImage.rows;  //720
     std::vector<double> zigzag_array;
     
     int n = 0; // Filas
@@ -19,7 +22,8 @@ std::vector<double> DCT_2_zigzag(const cv::Mat& dctImage) {
     std::string dir = "pos";
 
     while (dir != "stop") {
-        zigzag_array.push_back(dctImage.at<double>(m, n));
+
+        zigzag_array.push_back(dctImage.at<float>(n, m));
         if (dir == "pos") {
             if (m < max_width - 1) {
                 m += 1;
@@ -47,9 +51,10 @@ std::vector<double> DCT_2_zigzag(const cv::Mat& dctImage) {
         }
         if (m == max_width - 1 && n == max_height - 1) {
             dir = "stop";
-            zigzag_array.push_back(dctImage.at<double>(m, n));
+            zigzag_array.push_back(dctImage.at<float>(n, m));
         }
     }
+
     return zigzag_array;
 }
 
@@ -96,7 +101,6 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     // Recorrido en zigzag
     auto zigzagArray = DCT_2_zigzag(dctImage);
 
-
     double currentVal = zigzagArray[0];
     int count = 1;
 
@@ -114,6 +118,7 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
         }
     }
 
+
     // No olvides agregar el último valor y su contador.
     rle_values.push_back(currentVal);
     rle_counts.push_back(count);
@@ -124,6 +129,8 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     rle_image_msg.original_height = dctImage.rows; // O utiliza la altura real si la imagen no es cuadrada
     rle_image_msg.rle_values = rle_values;
     rle_image_msg.rle_counts = rle_counts;
+
+
 
     return rle_image_msg;
 }
@@ -163,6 +170,7 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
 
 std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
     // Convertir el mensaje ROS a una imagen OpenCV
+
     cv_bridge::CvImagePtr cv_ptr;
     try {
         cv_ptr = cv_bridge::toCvCopy(frame, sensor_msgs::image_encodings::MONO16);
@@ -171,37 +179,31 @@ std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::m
         return nullptr;
     }
 
-
     cv::Mat &mat = cv_ptr->image;
+    
     mat = DCT_coding(mat, compression_k);
-
     auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat));
-
 
     return rle_msg_ptr;
 }
 
 
-std::shared_ptr<sensor_msgs::msg::Image> to_decode_frame(const coded_interfaces::msg::Rleimg::SharedPtr msg) {
+std::shared_ptr<sensor_msgs::msg::Image> to_decode_frame(const coded_interfaces::msg::Rleimg::SharedPtr& msg) {
     int width = msg->original_width;
     int height = msg->original_height;
 
-    // Reconstruir vector rle (rle_values repetido x veces indicado en rle_counts)
-    std::vector<float> rleStream;
+    std::vector<std::pair<float, int>> rleStream;
+
+    // Llena el vector combinado
     for (size_t i = 0; i < msg->rle_values.size(); ++i) {
-        for (int j = 0; j < msg->rle_counts[i]; ++j) {
-            rleStream.push_back(msg->rle_values[i]);
-        }
+        rleStream.push_back(std::make_pair(msg->rle_values[i], msg->rle_counts[i]));
     }
 
-    // Reconstruir la matriz de coeficientes DCT
-    // Nota: Asumimos que la función RLE_to_DCT está implementada y realiza la reconstrucción adecuada.
-    cv::Mat dct_coefficients = cv::Mat(height, width, CV_32F); // Asegúrate de que el tipo coincida con tu data.
-    // Aquí deberías llenar `dct_coefficients` con los valores de `rleStream` según tu lógica de reconstrucción.
-    // La implementación de RLE_to_DCT depende de cómo necesites procesar `rleStream` para obtener los coeficientes DCT.
+    // Nota rle_stream es de tipo  std::vector<std::pair<float, int>>& rleStream,
+    auto dct_reconstructed = RLE_to_DCT(rleStream ,width,height);
 
     cv::Mat processedImage;
-    cv::idct(dct_coefficients, processedImage); // Asegúrate de que `dct_coefficients` está correctamente inicializada y llena.
+    cv::idct(dct_reconstructed, processedImage); // Asegúrate de que `dct_coefficients` está correctamente inicializada y llena.
 
     // Convertir la imagen procesada a mono16
     cv::Mat finalImage;
