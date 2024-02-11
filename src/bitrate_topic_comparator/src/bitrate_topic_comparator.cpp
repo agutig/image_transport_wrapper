@@ -47,6 +47,7 @@ private:
         } else {
             RCLCPP_INFO(this->get_logger(), "%s -- Bitrate: %f Mbits/sec", TOPIC_1.c_str(), last_bitrate_);
         }
+        last_bitrate_ = 0;
     }
 
     size_t calculate_serialized_size(const sensor_msgs::msg::Image::SharedPtr& msg) {
