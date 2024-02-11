@@ -1,9 +1,9 @@
 # Rleimg.msg
 
 # Original image size
-uint32 original_width
-uint32 original_height
+uint16 original_width
+uint16 original_height
 
 #coded vector
 float32[] rle_values #values 
-int32[] rle_counts  #number of times each value repeats
+uint16[] rle_counts  #number of times each value repeats

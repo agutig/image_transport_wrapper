@@ -131,7 +131,7 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     // Esta función asume que dctImage es una matriz cuadrada
 
     std::vector<float> rle_values;
-    std::vector<int> rle_counts;
+    std::vector<uint16_t> rle_counts;
 
     // Recorrido en zigzag
     auto zigzagArray = DCT_2_zigzag(dctImage);
@@ -147,7 +147,7 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
             // Si encontramos un valor diferente, guardamos el valor actual y su contador,
             // y luego reiniciamos el contador para el nuevo valor.
             rle_values.push_back(currentVal);
-            rle_counts.push_back(count);
+            rle_counts.push_back(static_cast<int16_t>(count));
             currentVal = zigzagArray[i];
             count = 1;
         }
