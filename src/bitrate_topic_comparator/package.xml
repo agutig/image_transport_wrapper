@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>bitrate_topic_comparator</name>
+  <version>0.0.1</version>
+  <description>Un paquete de ejemplo para un nodo listener en ROS2</description>
+
+  <maintainer email="tu_correo@example.com">Tu Nombre</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dependencias de compilación y ejecución -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+
+  <!-- Otras etiquetas necesarias -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
