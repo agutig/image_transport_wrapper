@@ -71,7 +71,8 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     This function recibes an imgage an aplies an recuantification toconvert from 16
     to 8 and a 2DCT transform to it.
     
-    this spectrum matrix its rounded to 2 decimals to make the coefficients as regular as possible.
+    this spectrum matrix its divided by an scalar (mostly 10 multiples, by dault 1000), truncated
+    and multiplied back
 
     Finally, to maximize compresion, in a row/colum square patternt we
     put to 0 the rows and columns more distant to the left-upper square.
@@ -101,7 +102,13 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
 
     //Recuantificacion a nivel frecuencial (truncamiento decimales)
     // Convierte los valores a enteros para eliminar los decimales y Convierte de vuelta a flotantes
+
+    float trunc_value = 1000.0; // 1k good value for simulation , 5000.0 good value for real compresion.
+
+    dctImage = dctImage / trunc_value; //Antes de truncar nos comemos 1 entero
     dctImage.convertTo(dctImage, CV_32S);
+
+    dctImage = dctImage * trunc_value;
     dctImage.convertTo(dctImage, CV_32F);
 
 
@@ -130,7 +137,7 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
 
     // Esta función asume que dctImage es una matriz cuadrada
 
-    std::vector<float> rle_values;
+    std::vector<int32_t> rle_values;
     std::vector<uint16_t> rle_counts;
 
     // Recorrido en zigzag
@@ -146,8 +153,8 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
         } else {
             // Si encontramos un valor diferente, guardamos el valor actual y su contador,
             // y luego reiniciamos el contador para el nuevo valor.
-            rle_values.push_back(currentVal);
-            rle_counts.push_back(static_cast<int16_t>(count));
+            rle_values.push_back(static_cast<int32_t>(currentVal));
+            rle_counts.push_back(static_cast<uint16_t>(count));
             currentVal = zigzagArray[i];
             count = 1;
         }

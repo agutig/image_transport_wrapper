@@ -24,7 +24,8 @@ public:
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
 
-    this -> declare_parameter<float>("compression_k", 1.2); //This param can be managed from outside.Make this value bigger for higher compression
+    this -> declare_parameter<float>("compression_k", 2); //This param can be managed from outside.Make this value bigger for higher compression.
+    // If k<2 i can be bigger than the original data
 
     // Define the QoS profile
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
