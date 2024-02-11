@@ -3,6 +3,7 @@
 #include <chrono>
 #include "rclcpp/serialization.hpp"
 #include "rclcpp/serialized_message.hpp"
+#include "coded_interfaces/msg/rleimg.hpp"
 
 using namespace std::chrono_literals;
 
@@ -22,11 +23,12 @@ public:
         qos.keep_last(1);
 
         // Suscripción al primer topic
+        // Suscripción al primer tópico
         subscription_1_ = this->create_subscription<sensor_msgs::msg::Image>(
             TOPIC_1, qos, std::bind(&BitrateTopicComparator::topic_callback_1, this, std::placeholders::_1));
             
-        // Suscripción al segundo topic
-        subscription_2_ = this->create_subscription<sensor_msgs::msg::Image>(
+        // Suscripción al segundo tópico
+        subscription_2_ = this->create_subscription<coded_interfaces::msg::Rleimg>(
             TOPIC_2, qos, std::bind(&BitrateTopicComparator::topic_callback_2, this, std::placeholders::_1));
 
         timer_ = this->create_wall_timer(
@@ -36,22 +38,21 @@ public:
 private:
     // Callback para el primer topic
     void topic_callback_1(const sensor_msgs::msg::Image::SharedPtr msg) {
-        calculate_bitrate(msg, last_bitrate_1_, last_message_time_1_);
-    }
-    
-    // Callback para el segundo topic
-    void topic_callback_2(const sensor_msgs::msg::Image::SharedPtr msg) {
-        calculate_bitrate(msg, last_bitrate_2_, last_message_time_2_);
+      size_t message_size_bits = calculate_serialized_size<sensor_msgs::msg::Image>(msg);
+      calculate_bitrate(message_size_bits, last_bitrate_1_, last_message_time_1_);
     }
 
-    // Función para calcular el bitrate
-    void calculate_bitrate(const sensor_msgs::msg::Image::SharedPtr& msg, double& last_bitrate, rclcpp::Time& last_message_time) {
+    void topic_callback_2(const coded_interfaces::msg::Rleimg::SharedPtr msg) {
+      size_t message_size_bits = calculate_serialized_size<coded_interfaces::msg::Rleimg>(msg);
+      calculate_bitrate(message_size_bits, last_bitrate_2_, last_message_time_2_);
+    }
+
+    void calculate_bitrate(size_t message_size_bits, double& last_bitrate, rclcpp::Time& last_message_time) {
         auto now = this->now();
         auto time_diff = now - last_message_time;
         auto time_diff_sec = time_diff.seconds() + time_diff.nanoseconds() / 1e9;
 
         if (time_diff_sec > 0) {
-            size_t message_size_bits = calculate_serialized_size(msg);
             last_bitrate = message_size_bits / time_diff_sec / 1e6; // Mbits/sec
         }
 
@@ -83,14 +84,18 @@ private:
     }
 
     // Función para calcular el tamaño serializado del mensaje
-    size_t calculate_serialized_size(const sensor_msgs::msg::Image::SharedPtr& msg) {
-        rclcpp::Serialization<sensor_msgs::msg::Image> serializer;
+    template<typename T>
+    size_t calculate_serialized_size(const typename T::SharedPtr& msg) {
+        rclcpp::Serialization<T> serializer;
         rclcpp::SerializedMessage serialized_msg;
         serializer.serialize_message(msg.get(), &serialized_msg);
-        return serialized_msg.size() * 8; // bits
+        return serialized_msg.size() * 8; // Retorna el tamaño en bits
     }
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_1_, subscription_2_;
+
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_1_;
+    rclcpp::Subscription<coded_interfaces::msg::Rleimg>::SharedPtr  subscription_2_;
+    
     rclcpp::TimerBase::SharedPtr timer_;
     double last_bitrate_1_, last_bitrate_2_;
     rclcpp::Time last_message_time_1_, last_message_time_2_;

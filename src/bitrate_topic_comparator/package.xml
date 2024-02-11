@@ -15,6 +15,7 @@
   <depend>sensor_msgs</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
+  <depend>coded_interfaces</depend>
 
   <!-- Otras etiquetas necesarias -->
   <export>
