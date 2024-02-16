@@ -1,12 +1,12 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
-#include "advanced_depth_codec/advanced_depth_codec.hpp"
+#include "adaptative_depth_codec/adaptative_depth_codec.hpp"
 #include "coded_interfaces/msg/rleimg.hpp"
 
 const std::string TOPIC_IN = "depth_camera_image"; //Input topic
 const std::string TOPIC_OUT = "depth_server_camera_image";  //Output topic
 
-class advanced_depth_codec_server : public rclcpp::Node
+class adaptative_depth_codec_server : public rclcpp::Node
 {
 
 //This node calls a codec server for depth raw video (16 bits) and codecs it into an rleimg message (look at coded interfaces pkg).
@@ -36,7 +36,7 @@ class advanced_depth_codec_server : public rclcpp::Node
 
 
 public:
-  advanced_depth_codec_server() : Node("advanced_depth_codec_server")
+  adaptative_depth_codec_server() : Node("adaptative_depth_codec_server")
   {
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
@@ -74,7 +74,7 @@ private:
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<advanced_depth_codec_server>());
+  rclcpp::spin(std::make_shared<adaptative_depth_codec_server>());
   rclcpp::shutdown();
   return 0;
 }
