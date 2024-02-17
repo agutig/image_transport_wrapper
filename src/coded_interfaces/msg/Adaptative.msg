@@ -1,9 +1,9 @@
-#Adaptative Message.
+# Adaptative.msg
 
-string role   #Server - client
-uint8 msg_type # 0= handshake/requirements , 2 = status , 3 = sync 
+string role   # Server or Client
+uint8 msg_type  # 0=Handshake/Requirements, 1=Status, 2=Sync (parece haber un error en la secuencia original, asumo que querías incluir el número 1)
 
-string msg_json 
+string msg_json  # JSON formatted message
 
 # Handshake   (type 0) + client content --> Client demands. TO maximice codec efficazy please fill the FEWER demands as they will be considered mandatory
 # fps = 30,60 ... nan
