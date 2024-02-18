@@ -1,12 +1,18 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "adaptative_depth_codec/adaptative_depth_codec.hpp"
+#include "adaptative_depth_codec/adaptative_alg.hpp"
 #include "coded_interfaces/msg/rleimg.hpp"
 #include "coded_interfaces/msg/adaptative.hpp"
+#include <tuple>
+#include <chrono>
 
 const std::string TOPIC_IN = "depth_camera_image"; //Input topic
 const std::string TOPIC_OUT = "depth_server_camera_image";  //Output topic
 const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
+
+
+bool handshake_done = false;
 
 class adaptative_depth_codec_server : public rclcpp::Node
 {
@@ -68,17 +74,46 @@ public:
     subscription_adaptative_ = this->create_subscription<coded_interfaces::msg::Adaptative>(
             ADAPTATIVE_TOPIC, 10, std::bind(&adaptative_depth_codec_server::adaptative_topic_callback, this, std::placeholders::_1));
 
+    timer_ = this->create_wall_timer( std::chrono::seconds(1),std::bind(&adaptative_depth_codec_server::status_callback, this));
   }
 
 private:
 
-  void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg) const
+  void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg)
     {
         // Imprime el contenido del mensaje recibido.
         RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
         RCLCPP_INFO(this->get_logger(), "Recibido: role='%s', msg_type=%u, msg_json='%s'",
                     msg->role.c_str(), msg->msg_type, msg->msg_json.c_str());
+
+
+        if (msg->role == "client"){
+          if (msg->msg_type == 0){
+            auto result = select_k(msg->msg_json);
+
+            float update_k_value = std::stof(std::get<0>(result)); 
+            coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result);
+            handshake_done = std::get<2>(result);
+            
+            publisher_adaptative_->publish(answer_msg);
+            this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
+            RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %f", update_k_value);
+
+          }
+        }
+        
     }
+
+  void status_callback(){
+
+    //This function will send status messages to the client
+    if (handshake_done) {
+        RCLCPP_INFO(this->get_logger(), "Hello worrd");
+        // Publicar el mensaje
+        //publisher_adaptative_->publish(message);
+    }
+  }
+
 
   rclcpp::Publisher<coded_interfaces::msg::Rleimg>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
@@ -86,6 +121,8 @@ private:
 
   rclcpp::Publisher<coded_interfaces::msg::Adaptative>::SharedPtr publisher_adaptative_;
   rclcpp::Subscription<coded_interfaces::msg::Adaptative>::SharedPtr subscription_adaptative_;
+
+  rclcpp::TimerBase::SharedPtr timer_ ;
 };
 
 int main(int argc, char *argv[])
