@@ -40,6 +40,23 @@ coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const
     return message;
 }
 
+coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, int width, int frame_type, int max_bit_rate) {
+    auto message = coded_interfaces::msg::Adaptative();
+    message.role = "server"; // Asumiendo que el rol es necesario como en el mensaje anterior
+    message.msg_type = 1; // Ajusta según tu definición de msg_type para este tipo de mensaje
+
+    nlohmann::json j;
+    j["fps"] = fps;
+    j["height"] = height;
+    j["width"] = width;
+    j["frame_type"] = frame_type; // Asume valores "progressive" o "interlaced"
+    j["max_bit_rate"] = max_bit_rate;
+
+    message.msg_json = j.dump(); // Serializa el objeto JSON a string
+
+    return message;
+}
+
 
 
 std::tuple<std::string, coded_interfaces::msg::Adaptative, bool> select_k(std::string& msg_json) {

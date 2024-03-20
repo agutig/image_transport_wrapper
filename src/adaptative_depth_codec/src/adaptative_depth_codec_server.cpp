@@ -12,7 +12,9 @@ const std::string TOPIC_OUT = "depth_server_camera_image";  //Output topic
 const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
 
+
 bool handshake_done = false;
+float compression_k = 1;
 
 class adaptative_depth_codec_server : public rclcpp::Node
 {
@@ -60,12 +62,18 @@ public:
       TOPIC_IN, qos,
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
 
-        RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
+        
 
-        float compression_k = 1;
-        this -> get_parameter("compression_k", compression_k);
-        auto codec_msg = to_code_frame(msg ,compression_k) ;
-        publisher_->publish(*codec_msg);
+        if (handshake_done){
+          //
+          RCLCPP_INFO(this->get_logger(), "sending video...");
+          this -> get_parameter("compression_k", compression_k);
+          auto codec_msg = to_code_frame(msg ,compression_k) ;
+          publisher_->publish(*codec_msg);
+        }else {
+          RCLCPP_INFO(this->get_logger(), "Reciving video...Waiting for handshake");
+        }
+
 
       });
 
@@ -74,7 +82,7 @@ public:
     subscription_adaptative_ = this->create_subscription<coded_interfaces::msg::Adaptative>(
             ADAPTATIVE_TOPIC, 10, std::bind(&adaptative_depth_codec_server::adaptative_topic_callback, this, std::placeholders::_1));
 
-    timer_ = this->create_wall_timer( std::chrono::seconds(1),std::bind(&adaptative_depth_codec_server::status_callback, this));
+    timer_ = this->create_wall_timer( std::chrono::seconds(10),std::bind(&adaptative_depth_codec_server::status_callback, this));
   }
 
 private:
@@ -92,14 +100,24 @@ private:
             auto result = select_k(msg->msg_json);
 
             float update_k_value = std::stof(std::get<0>(result)); 
-            coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result);
+            coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result); //already returns a handshake msg
             handshake_done = std::get<2>(result);
             
             publisher_adaptative_->publish(answer_msg);
             this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
             RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %f", update_k_value);
 
+            RCLCPP_INFO(this->get_logger(), "Sending coded video on: %s", TOPIC_IN.c_str());
+
+          } else if (msg->msg_type == 1) {
+
+              RCLCPP_INFO(this->get_logger(), "Received a type 1 message.");
+              // Agrega aquí más lógica según sea necesario.
+          } else {
+
+              RCLCPP_WARN(this->get_logger(), "Received an unknown message type: %d", msg->msg_type);
           }
+          
         }
         
     }
@@ -108,7 +126,11 @@ private:
 
     //This function will send status messages to the client
     if (handshake_done) {
-        RCLCPP_INFO(this->get_logger(), "Hello worrd");
+        RCLCPP_INFO(this->get_logger(), "STATUS MSG");
+        auto msg =  generate_server_status( 30, 1920,1080, 0, 1);
+        publisher_adaptative_->publish(msg);
+
+        RCLCPP_INFO(this->get_logger(), msg.msg_json.c_str());
         // Publicar el mensaje
         //publisher_adaptative_->publish(message);
     }
@@ -117,8 +139,6 @@ private:
 
   rclcpp::Publisher<coded_interfaces::msg::Rleimg>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
-
-
   rclcpp::Publisher<coded_interfaces::msg::Adaptative>::SharedPtr publisher_adaptative_;
   rclcpp::Subscription<coded_interfaces::msg::Adaptative>::SharedPtr subscription_adaptative_;
 

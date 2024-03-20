@@ -114,14 +114,15 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
 
     // Forzar a 0 las ultimas/columnas
     // Calcular las dimensiones para mantener los coeficientes
-    int keepWidth = dctImage.cols * 1 / compression_k;
-    int keepHeight = dctImage.rows * 1 / compression_k;
+    if (compression_k != 0){
+        int keepWidth = dctImage.cols * 1 / compression_k;
+        int keepHeight = dctImage.rows * 1 / compression_k;
 
-    cv::Mat mask = cv::Mat::zeros(dctImage.size(), CV_32F);
-    cv::Mat roi(mask, cv::Rect(0, 0, keepWidth, keepHeight));
-    roi.setTo(cv::Scalar(1));
-    dctImage = dctImage.mul(mask);
-
+        cv::Mat mask = cv::Mat::zeros(dctImage.size(), CV_32F);
+        cv::Mat roi(mask, cv::Rect(0, 0, keepWidth, keepHeight));
+        roi.setTo(cv::Scalar(1));
+        dctImage = dctImage.mul(mask);
+    }
 
     return dctImage;
 }
