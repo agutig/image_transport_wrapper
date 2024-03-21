@@ -10,6 +10,8 @@ const std::string TOPIC_IN = "depth_server_camera_image";
 const std::string TOPIC_OUT = "depth_client_camera_image";
 const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
+bool handshake_done = false;
+
 class adaptative_depth_codec_client : public rclcpp::Node
 {
 //This node calls a codec client for an coded depth video (rleimg msg) and decodes it into an ordinary video (msg/image secuence).
@@ -38,23 +40,53 @@ public:
         publisher_->publish(*decoded_msg);
       });
 
-    // Adaptative topic
+    
     publisher_adaptative_ = this->create_publisher<coded_interfaces::msg::Adaptative>(ADAPTATIVE_TOPIC, 10);
-    // Publica el mensaje.
-    publisher_adaptative_->publish(generate_client_handshake(0,0,0,0,0));
-    RCLCPP_INFO(this->get_logger(), "Sent handshake");
+    timer_ = this->create_wall_timer( std::chrono::seconds(1),std::bind(&adaptative_depth_codec_client::comunicate_w_server, this));
+
     subscription_adaptative_ = this->create_subscription<coded_interfaces::msg::Adaptative>(
             ADAPTATIVE_TOPIC, 10, std::bind(&adaptative_depth_codec_client::adaptative_topic_callback, this, std::placeholders::_1));
   }
 
 private:
 
-  void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg) const
+  void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg)
     {
-        // Imprime el contenido del mensaje recibido.
+
+         // Imprime el contenido del mensaje recibido.
+        RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
         RCLCPP_INFO(this->get_logger(), "Recibido: role='%s', msg_type=%u, msg_json='%s'",
                     msg->role.c_str(), msg->msg_type, msg->msg_json.c_str());
+
+        if (msg->role == "server"){
+          RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
+          RCLCPP_INFO(this->get_logger(), "Recibido: role='%s', msg_type=%u, msg_json='%s'",
+          msg->role.c_str(), msg->msg_type, msg->msg_json.c_str());
+          
+          if (msg->msg_type == 0){
+
+            RCLCPP_WARN(this->get_logger(), "Received Handshake: %d", msg->msg_type);
+            handshake_done = true;
+
+          } 
+
+        }
     }
+
+  void comunicate_w_server()
+    {
+      if (handshake_done){
+          RCLCPP_INFO(this->get_logger(), "Handhsake done");
+        
+      }else{
+          // Adaptative topic
+          RCLCPP_INFO(this->get_logger(), "Sending handshake");
+          publisher_adaptative_->publish(generate_client_handshake(0,0,0,0,0));
+          RCLCPP_INFO(this->get_logger(), "Sent handshake");
+      };
+    };
+
+  
 
 
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
@@ -62,6 +94,8 @@ private:
 
   rclcpp::Publisher<coded_interfaces::msg::Adaptative>::SharedPtr publisher_adaptative_;
   rclcpp::Subscription<coded_interfaces::msg::Adaptative>::SharedPtr subscription_adaptative_;
+
+  rclcpp::TimerBase::SharedPtr timer_ ;
 };
 
 int main(int argc, char *argv[])

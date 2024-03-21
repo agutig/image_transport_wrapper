@@ -6,6 +6,7 @@
 #include "coded_interfaces/msg/adaptative.hpp"
 #include <tuple>
 #include <chrono>
+#include <map>
 
 const std::string TOPIC_IN = "depth_camera_image"; //Input topic
 const std::string TOPIC_OUT = "depth_server_camera_image";  //Output topic
@@ -30,16 +31,17 @@ class adaptative_depth_codec_server : public rclcpp::Node
 
 //K values and bitrate
 
-// K = 1 --> 18 Mbits max
-// K = 2 --> 16 Mbits max
-// K = 3 --> 12 Mbits max
-// K = 4 --> 8 Mbits max
-// K = 5 --> 6 Mbits max
-// K = 10 --> 1.8 Mbits max
-// K = 15 --> 0.8
-// K = 20 --> 0.5
-// K = 25 --> 0.3
-// K = 25 --> 0.8
+std::map<int, double> bitrates = {
+    {1, 18.0},    // K = 1 --> 18 Mbits max
+    {2, 16.0},    // K = 2 --> 16 Mbits max
+    {3, 12.0},    // K = 3 --> 12 Mbits max
+    {4, 8.0},     // K = 4 --> 8 Mbits max
+    {5, 6.0},     // K = 5 --> 6 Mbits max
+    {10, 1.8},    // K = 10 --> 1.8 Mbits max
+    {15, 0.8},    // K = 15 --> 0.8 Mbits max
+    {20, 0.5},    // K = 20 --> 0.5 Mbits max
+    {25, 0.3},    // K = 25 --> 0.3 Mbits max
+};
 
 public:
   adaptative_depth_codec_server() : Node("adaptative_depth_codec_server")
@@ -97,6 +99,8 @@ private:
 
         if (msg->role == "client"){
           if (msg->msg_type == 0){
+
+            RCLCPP_WARN(this->get_logger(), "Received Handshake: %d", msg->msg_type);
             auto result = select_k(msg->msg_json);
 
             float update_k_value = std::stof(std::get<0>(result)); 
@@ -115,7 +119,7 @@ private:
               // Agrega aquí más lógica según sea necesario.
           } else {
 
-              RCLCPP_WARN(this->get_logger(), "Received an unknown message type: %d", msg->msg_type);
+            RCLCPP_WARN(this->get_logger(), "Received an unknown message type: %d", msg->msg_type);
           }
           
         }
