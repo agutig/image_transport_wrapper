@@ -1,5 +1,8 @@
 # Rleimg.msg
 
+# Timestamp for latency calculation
+builtin_interfaces/Time timestamp
+
 # Original image size
 uint16 original_width
 uint16 original_height

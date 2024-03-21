@@ -172,7 +172,8 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     rle_image_msg.original_height = dctImage.rows; // O utiliza la altura real si la imagen no es cuadrada
     rle_image_msg.rle_values = rle_values;
     rle_image_msg.rle_counts = rle_counts;
-    //rle_image_msg.timestamp = rclcpp::Node::now();
+    rclcpp::Clock clock(RCL_SYSTEM_TIME);
+    rle_image_msg.timestamp = clock.now();
 
 
     return rle_image_msg;
