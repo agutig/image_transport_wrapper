@@ -13,6 +13,8 @@
   <depend>opencv</depend>  
   <depend>std_msgs</depend>
   <depend>coded_interfaces</depend>
+  <depend>rosidl_default_runtime</depend>
+  
   
 
   <buildtool_depend>ament_cmake</buildtool_depend>

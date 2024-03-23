@@ -131,7 +131,7 @@ private:
     //This function will send status messages to the client
     if (handshake_done) {
         RCLCPP_INFO(this->get_logger(), "STATUS MSG");
-        auto msg =  generate_server_status( 30, 1920,1080, 0, 1);
+        auto msg =  generate_server_status( 30, 1920,1080, 0, bitrates[compression_k]);
         publisher_adaptative_->publish(msg);
 
         RCLCPP_INFO(this->get_logger(), msg.msg_json.c_str());

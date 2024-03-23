@@ -14,6 +14,8 @@ find_package(OpenCV REQUIRED)
 find_package(coded_interfaces REQUIRED)
 
 
+
+
 include_directories(
   include  
 )
@@ -23,8 +25,8 @@ include_directories(
 add_executable(adaptative_depth_codec_server src/adaptative_depth_codec_server.cpp src/utils/adaptative_depth_codec.cpp src/utils/adaptative_alg.cpp)
 add_executable(adaptative_depth_codec_client src/adaptative_depth_codec_client.cpp src/utils/adaptative_depth_codec.cpp src/utils/adaptative_alg.cpp)
 
-ament_target_dependencies(adaptative_depth_codec_server rclcpp sensor_msgs cv_bridge OpenCV coded_interfaces)
-ament_target_dependencies(adaptative_depth_codec_client rclcpp sensor_msgs cv_bridge OpenCV coded_interfaces)
+ament_target_dependencies(adaptative_depth_codec_server rclcpp sensor_msgs cv_bridge OpenCV coded_interfaces )
+ament_target_dependencies(adaptative_depth_codec_client rclcpp sensor_msgs cv_bridge OpenCV coded_interfaces )
 
 
 install(TARGETS

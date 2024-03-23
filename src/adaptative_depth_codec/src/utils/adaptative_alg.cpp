@@ -4,6 +4,9 @@
 #include "coded_interfaces/msg/adaptative.hpp"
 #include "adaptative_depth_codec/adaptative_alg.hpp"
 #include <tuple>
+#include "coded_interfaces/msg/rleimg.hpp"
+#include "rclcpp/serialization.hpp"
+#include "rclcpp/serialized_message.hpp"
 
 
 coded_interfaces::msg::Adaptative generate_client_handshake(int fps  , int height, int weight ,int frame_type,int max_bit_rate){
@@ -102,17 +105,23 @@ std::tuple<std::string, coded_interfaces::msg::Adaptative, bool> select_k(std::s
 }
 
 
-void calculate_bitrate(size_t message_size_bits, double& last_bitrate, rclcpp::Time& last_message_time, rclcpp::Clock::SharedPtr clock) {
-    auto now = clock->now();
-    auto time_diff = now - last_message_time;
-    // La conversión de la diferencia de tiempo a segundos se puede hacer directamente sin descomponer en segundos y nanosegundos.
-    double time_diff_sec = time_diff.seconds();
 
-    if (time_diff_sec > 0) {
-        last_bitrate = message_size_bits / time_diff_sec / 1e6; // Mbits/sec
+double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg, rclcpp::Time now)
+    {
+        rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
+        rclcpp::SerializedMessage serialized_msg;
+        serialization.serialize_message(&msg, &serialized_msg);
+
+        size_t message_size_bits = serialized_msg.size() * 8;
+        auto time_diff = now - last_message_time;
+        double time_diff_sec = time_diff.seconds();
+
+        double request_bitrate = 0.0;
+
+        if (time_diff_sec > 0) {
+            request_bitrate = static_cast<double>(message_size_bits) / time_diff_sec / 1e6; // Mbits/sec
+        }
+        last_message_time = now;
+
+        return request_bitrate;
     }
-
-    last_message_time = now;
-}
-
-

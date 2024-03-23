@@ -17,6 +17,7 @@ class adaptative_depth_codec_client : public rclcpp::Node
 //This node calls a codec client for an coded depth video (rleimg msg) and decodes it into an ordinary video (msg/image secuence).
 
 public:
+  BitrateCalculator bitrate_calculator;
   adaptative_depth_codec_client() : Node("adaptative_depth_codec_client")
   {
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
@@ -29,15 +30,23 @@ public:
     qos.history(RMW_QOS_POLICY_HISTORY_KEEP_LAST);
     qos.keep_last(1);
 
+    //define object
+    
+    
     publisher_ = this->create_publisher<sensor_msgs::msg::Image>(TOPIC_OUT, qos);
     subscription_ = this->create_subscription<coded_interfaces::msg::Rleimg>(
       TOPIC_IN, qos,
       [this](coded_interfaces::msg::Rleimg::SharedPtr msg) {
 
+        auto now = this->now();
         RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
         auto decoded_msg = to_decode_frame(msg);
 
         publisher_->publish(*decoded_msg);
+        
+        double bitrate = this->bitrate_calculator.calculate_bitrate_to_request(msg,now);
+        std::cout << "Bitrate solicitado: " << bitrate << " Mbits/sec" << std::endl;
+
       });
 
     
@@ -52,11 +61,6 @@ private:
 
   void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg)
     {
-
-         // Imprime el contenido del mensaje recibido.
-        RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
-        RCLCPP_INFO(this->get_logger(), "Recibido: role='%s', msg_type=%u, msg_json='%s'",
-                    msg->role.c_str(), msg->msg_type, msg->msg_json.c_str());
 
         if (msg->role == "server"){
           RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
