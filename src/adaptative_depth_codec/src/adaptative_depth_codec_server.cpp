@@ -68,7 +68,7 @@ public:
 
         if (handshake_done){
           //
-          RCLCPP_INFO(this->get_logger(), "sending video...");
+          //RCLCPP_INFO(this->get_logger(), "sending video...");
           this -> get_parameter("compression_k", compression_k);
           auto codec_msg = to_code_frame(msg ,compression_k) ;
           publisher_->publish(*codec_msg);
@@ -92,9 +92,7 @@ private:
   void adaptative_topic_callback(const coded_interfaces::msg::Adaptative::SharedPtr msg)
     {
         // Imprime el contenido del mensaje recibido.
-        RCLCPP_INFO(this->get_logger(), "Message on adaptative topic recived");
-        RCLCPP_INFO(this->get_logger(), "Recibido: role='%s', msg_type=%u, msg_json='%s'",
-                    msg->role.c_str(), msg->msg_type, msg->msg_json.c_str());
+        std::cout << "" << std::endl;
 
 
         if (msg->role == "client"){
@@ -116,11 +114,15 @@ private:
           } else if (msg->msg_type == 1) {
 
               RCLCPP_INFO(this->get_logger(), "Received a type 1 message.");
+              auto result = select_k(msg->msg_json);
+              float update_k_value = std::stof(std::get<0>(result)); 
+              this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
+              std::cout << "New profile K: " << update_k_value << std::endl;
+
               // Agrega aquí más lógica según sea necesario.
           } else {
 
             RCLCPP_WARN(this->get_logger(), "Received an unknown message type: %d", msg->msg_type);
-            auto result = select_k(msg->msg_json);
           }
           
         }
