@@ -104,10 +104,10 @@ private:
             auto result = select_k(msg->msg_json);
 
             float update_k_value = std::stof(std::get<0>(result)); 
-            coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result); //already returns a handshake msg
-            handshake_done = std::get<2>(result);
+            //coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result); //already returns a handshake msg
+            handshake_done = std::get<1>(result);
             
-            publisher_adaptative_->publish(answer_msg);
+            publisher_adaptative_->publish(generate_server_handshake(handshake_done, ""));
             this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
             RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %f", update_k_value);
 
@@ -120,6 +120,7 @@ private:
           } else {
 
             RCLCPP_WARN(this->get_logger(), "Received an unknown message type: %d", msg->msg_type);
+            auto result = select_k(msg->msg_json);
           }
           
         }

@@ -38,14 +38,15 @@ public:
       TOPIC_IN, qos,
       [this](coded_interfaces::msg::Rleimg::SharedPtr msg) {
 
-        auto now = this->now();
-        RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
+        //RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
         auto decoded_msg = to_decode_frame(msg);
 
         publisher_->publish(*decoded_msg);
         
-        double bitrate = this->bitrate_calculator.calculate_bitrate_to_request(msg,now);
-        std::cout << "Bitrate solicitado: " << bitrate << " Mbits/sec" << std::endl;
+        double bitrate = this->bitrate_calculator.calculate_bitrate_to_request(msg);
+        //std::cout << "Bitrate solicitado: " << bitrate << " Mbits/sec" << std::endl;
+        
+        publisher_adaptative_->publish(generate_client_status(30,1920,1080,0,bitrate));
 
       });
 
@@ -85,8 +86,9 @@ private:
       }else{
           // Adaptative topic
           RCLCPP_INFO(this->get_logger(), "Sending handshake");
-          publisher_adaptative_->publish(generate_client_handshake(0,0,0,0,0));
+          publisher_adaptative_->publish(generate_client_handshake(30,0,0,0,0));
           RCLCPP_INFO(this->get_logger(), "Sent handshake");
+          bitrate_calculator.frame_rate = 30;
       };
     };
 
