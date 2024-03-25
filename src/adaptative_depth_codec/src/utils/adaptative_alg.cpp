@@ -115,11 +115,13 @@ std::tuple<std::string, bool> select_k(std::string& msg_json) {
 
     for (const auto& [key, value] : j.items()) {
         float currentValue = value.get<float>(); // Asumiendo que todos los valores son numéricos y pueden convertirse a float
-        float currentDiff = std::fabs(currentValue - searchValue);
-        
-        if (currentDiff < closestDiff) {
-            closestDiff = currentDiff;
-            closestKey = key;
+
+        if (currentValue <= searchValue) {
+            float currentDiff = std::fabs(currentValue - searchValue);
+            if (currentDiff < closestDiff) {
+                closestDiff = currentDiff;
+                closestKey = key;
+            }
         }
     }
 
