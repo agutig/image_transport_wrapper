@@ -110,15 +110,27 @@ std::tuple<std::string, bool> select_k(std::string& msg_json) {
     inputFile >> j;
 
     // Busca la clave para el valor dado
+    float closestValueDiff = std::numeric_limits<float>::max(); // Inicializa con el máximo valor posible
+    std::string closestKey;
+
     for (const auto& item : j.items()) {
-        // Asumiendo que estás buscando dentro de un objeto o array de configuraciones,
-        // y cada elemento tiene una clave "max_bit_rate" que quieres comparar.
-        if (item.value().contains("max_bit_rate") && item.value()["max_bit_rate"].get<float>() == searchValue) {
-            return std::make_tuple(item.key(),true); // Retorna la clave si encuentra el valor
+        if (item.value().contains("max_bit_rate")) {
+            float currentValue = item.value()["max_bit_rate"].get<float>();
+            float currentDiff = std::fabs(currentValue - searchValue);
+            
+            // Si la diferencia actual es menor que la más cercana encontrada hasta ahora, actualiza
+            if (currentDiff < closestValueDiff) {
+                closestValueDiff = currentDiff;
+                closestKey = item.key();
+            }
         }
     }
+    // Verifica si se encontró algún valor
+    if (closestKey.empty()) {
+        return std::make_tuple("0", true);// No se encontró ningún valor cercano
+    }
+    return std::make_tuple(closestKey, true); // Retorna la clave del valor más cercano
 
-    return std::make_tuple("0", true);
 }
 
 

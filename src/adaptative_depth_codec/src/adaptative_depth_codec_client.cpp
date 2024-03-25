@@ -86,7 +86,7 @@ private:
       }else{
           // Adaptative topic
           RCLCPP_INFO(this->get_logger(), "Sending handshake");
-          publisher_adaptative_->publish(generate_client_handshake(30,0,0,0,0));
+          publisher_adaptative_->publish(generate_client_handshake(30,1080,1920,0,1000));
           RCLCPP_INFO(this->get_logger(), "Sent handshake");
           bitrate_calculator.frame_rate = 30;
       };

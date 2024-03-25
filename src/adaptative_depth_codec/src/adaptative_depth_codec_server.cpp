@@ -32,7 +32,7 @@ class adaptative_depth_codec_server : public rclcpp::Node
 //K values and bitrate
 
 std::map<int, double> bitrates = {
-    {1, 18.0},    // K = 1 --> 18 Mbits max
+    {1, 1000.0},    // K = 1 --> 18 Mbits max
     {2, 16.0},    // K = 2 --> 16 Mbits max
     {3, 12.0},    // K = 3 --> 12 Mbits max
     {4, 8.0},     // K = 4 --> 8 Mbits max
