@@ -9,7 +9,7 @@
 #include "rclcpp/serialized_message.hpp"
 
 
-coded_interfaces::msg::Adaptative generate_client_handshake(int fps  , int height, int weight ,int frame_type,int max_bit_rate){
+coded_interfaces::msg::Adaptative generate_client_handshake(int fps  , int height, int weight ,int frame_type,double max_bit_rate){
     auto message = coded_interfaces::msg::Adaptative();
     message.role = "client";
     message.msg_type = 0; // Ajusta según tu definición de msg_type.
@@ -43,7 +43,7 @@ coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const
     return message;
 }
 
-coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, int width, int frame_type, int max_bit_rate) {
+coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, int width, int frame_type, double max_bit_rate) {
     auto message = coded_interfaces::msg::Adaptative();
     message.role = "server"; // Asumiendo que el rol es necesario como en el mensaje anterior
     message.msg_type = 1; // Ajusta según tu definición de msg_type para este tipo de mensaje
@@ -60,7 +60,7 @@ coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, in
     return message;
 }
 
-coded_interfaces::msg::Adaptative generate_client_status(int fps, int height, int width, int frame_type, int max_bit_rate) {
+coded_interfaces::msg::Adaptative generate_client_status(int fps, int height, int width, int frame_type, double max_bit_rate) {
     auto message = coded_interfaces::msg::Adaptative();
     message.role = "client"; // Asumiendo que el rol es necesario como en el mensaje anterior
     message.msg_type = 1; // Ajusta según tu definición de msg_type para este tipo de mensaje
@@ -157,7 +157,7 @@ double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<cod
         double extra_permited_latency = 0.01;
         double epsilon_margin = 0.2; //20%
         double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
-        double relative_capacity = time_diff_sec / media_time;
+        double relative_capacity = media_time / time_diff_sec;
         double k = (1-epsilon_margin) * relative_capacity;
 
         double request_bitrate = k * actual_bitrate;
