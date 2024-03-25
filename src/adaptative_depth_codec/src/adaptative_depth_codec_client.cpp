@@ -96,7 +96,9 @@ private:
 
   void comunicate_w_codec()
     {
+      RCLCPP_INFO(this->get_logger(), "HOla??");
       if (handshake_done and reciving_video){
+          RCLCPP_INFO(this->get_logger(), "Enviando feedback del bitrate");
           double bitrate = this->bitrate_calculator.calculate_bitrate_to_request();
           publisher_adaptative_->publish(generate_client_status(30,1920,1080,0,bitrate));
         
