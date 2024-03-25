@@ -110,22 +110,19 @@ std::tuple<std::string, bool> select_k(std::string& msg_json) {
     inputFile >> j;
 
     // Busca la clave para el valor dado
-    float closestValueDiff = std::numeric_limits<float>::max(); // Inicializa con el máximo valor posible
+    float closestDiff = std::numeric_limits<float>::max(); // Inicializa con el máximo valor posible
     std::string closestKey;
 
-    for (const auto& item : j.items()) {
-        if (item.value().contains("max_bit_rate")) {
-            float currentValue = item.value()["max_bit_rate"].get<float>();
-            float currentDiff = std::fabs(currentValue - searchValue);
-            
-            // Si la diferencia actual es menor que la más cercana encontrada hasta ahora, actualiza
-            if (currentDiff < closestValueDiff) {
-                closestValueDiff = currentDiff;
-                closestKey = item.key();
-            }
+    for (const auto& [key, value] : j.items()) {
+        float currentValue = value.get<float>(); // Asumiendo que todos los valores son numéricos y pueden convertirse a float
+        float currentDiff = std::fabs(currentValue - searchValue);
+        
+        if (currentDiff < closestDiff) {
+            closestDiff = currentDiff;
+            closestKey = key;
         }
     }
-    // Verifica si se encontró algún valor
+
     if (closestKey.empty()) {
         return std::make_tuple("0", true);// No se encontró ningún valor cercano
     }
@@ -154,7 +151,7 @@ double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<cod
         }
         last_message_time = now;
 
-        double extra_permited_latency = 0.01;
+        double extra_permited_latency = 0.1;
         double epsilon_margin = 0.2; //20%
         double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
         double relative_capacity = media_time / time_diff_sec;
@@ -170,7 +167,7 @@ double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<cod
 
         std::cout << "relative_capacity: " << relative_capacity << std::endl;
 
-        std::cout << "k: " << k << std::endl;
+        std::cout << "coeficient: " << k << std::endl;
 
         std::cout << "Requested bitrate: " << request_bitrate << " Mbits/sec" << std::endl;
 

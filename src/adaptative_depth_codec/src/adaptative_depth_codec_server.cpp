@@ -32,6 +32,7 @@ class adaptative_depth_codec_server : public rclcpp::Node
 //K values and bitrate
 
 std::map<int, double> bitrates = {
+    {0, 1000000.0}, 
     {1, 1000.0},    // K = 1 --> 18 Mbits max
     {2, 16.0},    // K = 2 --> 16 Mbits max
     {3, 12.0},    // K = 3 --> 12 Mbits max
@@ -133,11 +134,9 @@ private:
 
     //This function will send status messages to the client
     if (handshake_done) {
-        RCLCPP_INFO(this->get_logger(), "STATUS MSG");
         auto msg =  generate_server_status( 30, 1920,1080, 0, bitrates[compression_k]);
         publisher_adaptative_->publish(msg);
 
-        RCLCPP_INFO(this->get_logger(), msg.msg_json.c_str());
         // Publicar el mensaje
         //publisher_adaptative_->publish(message);
     }
