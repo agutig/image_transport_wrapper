@@ -4,7 +4,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-const int FRAMES_PER_SECOND = 60;
+int FRAMES_PER_SECOND = 60;
 
 
 class CameraDepthPublisher : public rclcpp::Node
@@ -61,6 +61,16 @@ private:
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
+    //Terminal argument  added
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "-fps") == 0 && i + 1 < argc) {
+            FRAMES_PER_SECOND = std::atoi(argv[i + 1]);
+            ++i; // Incrementa i para saltar el valor ya que fue procesado
+        } else {
+            FRAMES_PER_SECOND = 30;
+        }
+    }
+
     auto node = std::make_shared<CameraDepthPublisher>();
     if (rclcpp::ok()) {
         rclcpp::spin(node);
