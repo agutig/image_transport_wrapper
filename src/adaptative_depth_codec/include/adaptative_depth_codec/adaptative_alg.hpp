@@ -22,14 +22,17 @@ class BitrateCalculator {
 public:
     rclcpp::Clock::SharedPtr clock_; // Usar un shared_ptr para el reloj
     rclcpp::Time last_message_time;  // Ya no necesita inicialización por defecto aquí
-    int frame_rate; 
+    int frame_rate;
+    std::vector<float> latency_buffer;
+    std::vector<float> bitrate_buffer;
 
     // Constructor que acepta un reloj
     BitrateCalculator()
         : clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME)), 
         last_message_time(clock_->now()) {}
 
-    double calculate_bitrate_to_request(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg); // Método modificado para devolver el tiempo
+    double calculate_bitrate_to_request(); // Método modificado para devolver el tiempo
+    void add_msg_data_to_buffer(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg); 
 };
 
 #endif // BITRATE_CALCULATOR_HPP

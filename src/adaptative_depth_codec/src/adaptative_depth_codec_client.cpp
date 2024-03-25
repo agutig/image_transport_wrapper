@@ -11,6 +11,7 @@ const std::string TOPIC_OUT = "depth_client_camera_image";
 const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
 bool handshake_done = false;
+bool reciving_video = false;
 
 class adaptative_depth_codec_client : public rclcpp::Node
 {
@@ -38,19 +39,20 @@ public:
       TOPIC_IN, qos,
       [this](coded_interfaces::msg::Rleimg::SharedPtr msg) {
 
+        reciving_video = true;
         //RCLCPP_INFO(this->get_logger(), "Connected to topics, sending video...");
         auto decoded_msg = to_decode_frame(msg);
 
         publisher_->publish(*decoded_msg);
         
-        double bitrate = this->bitrate_calculator.calculate_bitrate_to_request(msg);
-        //std::cout << "Bitrate solicitado: " << bitrate << " Mbits/sec" << std::endl;
+        this->bitrate_calculator.add_msg_data_to_buffer(msg);
+        //std::cout << "Bitrate solicitado: " << bitrate << " Mbits/sec" << std::endl
         
-        publisher_adaptative_->publish(generate_client_status(30,1920,1080,0,bitrate));
 
       });
 
-    
+    codec_timer_ = this->create_wall_timer( std::chrono::seconds(1),std::bind(&adaptative_depth_codec_client::comunicate_w_codec, this));
+
     publisher_adaptative_ = this->create_publisher<coded_interfaces::msg::Adaptative>(ADAPTATIVE_TOPIC, 10);
     timer_ = this->create_wall_timer( std::chrono::seconds(1),std::bind(&adaptative_depth_codec_client::comunicate_w_server, this));
 
@@ -92,6 +94,15 @@ private:
       };
     };
 
+  void comunicate_w_codec()
+    {
+      if (handshake_done and reciving_video){
+          double bitrate = this->bitrate_calculator.calculate_bitrate_to_request();
+          publisher_adaptative_->publish(generate_client_status(30,1920,1080,0,bitrate));
+        
+      }
+    };
+
   
 
 
@@ -102,6 +113,7 @@ private:
   rclcpp::Subscription<coded_interfaces::msg::Adaptative>::SharedPtr subscription_adaptative_;
 
   rclcpp::TimerBase::SharedPtr timer_ ;
+  rclcpp::TimerBase::SharedPtr codec_timer_;
 };
 
 int main(int argc, char *argv[])

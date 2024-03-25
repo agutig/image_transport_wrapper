@@ -132,38 +132,42 @@ std::tuple<std::string, bool> select_k(std::string& msg_json) {
 
 
 
-double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg)
+void add_to_buffer(std::vector<float>& buffer, float element, const size_t buffer_capacity) {
+    if (buffer.size() >= buffer_capacity) {
+        buffer.erase(buffer.begin()); // Elimina el primer elemento si el buffer está lleno
+    }
+    buffer.push_back(element); // Añade el nuevo elemento al final
+}
+
+
+float calculate_mean(const std::vector<float>& buffer) {
+    if (buffer.empty()) return 0.0f; // Evita división por cero si el vector está vacío
+    float suma = std::accumulate(buffer.begin(), buffer.end(), 0.0f);
+    return suma / buffer.size();
+}
+
+
+
+double BitrateCalculator::calculate_bitrate_to_request()
     {
 
-        rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
-        rclcpp::SerializedMessage serialized_msg;
-        serialization.serialize_message(&(*msg), &serialized_msg);
+        double latency = calculate_mean(latency_buffer);
+        double bitrate = calculate_mean(bitrate_buffer);
 
-        rclcpp::Time now = clock_->now();
-        size_t message_size_bits = serialized_msg.size() * 8;
-        auto time_diff = now - last_message_time;
-        double time_diff_sec = time_diff.seconds();
-
-        double actual_bitrate = 0.0;
-
-        if (time_diff_sec > 0) {
-            actual_bitrate = static_cast<double>(message_size_bits) / time_diff_sec / 1e6; // Mbits/sec
-        }
-        last_message_time = now;
 
         double extra_permited_latency = 0.1;
         double epsilon_margin = 0.2; //20%
         double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
-        double relative_capacity = media_time / time_diff_sec;
+        double relative_capacity = media_time / latency;
         double k = (1-epsilon_margin) * relative_capacity;
 
-        double request_bitrate = k * actual_bitrate;
+        double request_bitrate = k * bitrate;
         std::cout << "________________"<< std::endl;
-        std::cout << "Bitrate medido: " << actual_bitrate << " Mbits/sec" << std::endl;
+        std::cout << "Bitrate medido: " << bitrate << " Mbits/sec" << std::endl;
 
         std::cout << "framerate: " << frame_rate << std::endl;
         std::cout << "media_time: " << media_time << std::endl;
-        std::cout << "Latency: " << time_diff_sec << std::endl;
+        std::cout << "Latency: " << latency << std::endl;
 
         std::cout << "relative_capacity: " << relative_capacity << std::endl;
 
@@ -173,3 +177,29 @@ double BitrateCalculator::calculate_bitrate_to_request(const std::shared_ptr<cod
 
         return request_bitrate;
     }
+
+
+void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg){
+    
+
+    rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
+    rclcpp::SerializedMessage serialized_msg;
+    serialization.serialize_message(&(*msg), &serialized_msg);
+
+    rclcpp::Time now = clock_->now();
+    size_t message_size_bits = serialized_msg.size() * 8;
+    auto time_diff = now - last_message_time;
+    double latency = time_diff.seconds();
+
+    double actual_bitrate = 0.0;
+
+    if (latency > 0) {
+        actual_bitrate = static_cast<double>(message_size_bits) / latency / 1e6; // Mbits/sec
+    }
+    last_message_time = now;
+
+    add_to_buffer( latency_buffer,latency , 5);
+    add_to_buffer(bitrate_buffer,actual_bitrate,5);
+
+}
+
