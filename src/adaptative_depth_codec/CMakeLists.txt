@@ -13,6 +13,14 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(coded_interfaces REQUIRED)
 
+find_package(nlohmann_json QUIET) # Intenta encontrar el paquete
+
+if(NOT nlohmann_json_FOUND) # Si no se encuentra el paquete
+  message(FATAL_ERROR "nlohmann_json not found. Try to install it executing: sudo apt-get install nlohmann-json3-dev")
+  # Opcional: Ejecutar un script de shell para instalar automáticamente
+  # execute_process(COMMAND sudo apt-get install -y nlohmann-json3-dev)
+endif()
+
 
 
 
