@@ -134,7 +134,7 @@ private:
 
     //This function will send status messages to the client
     if (handshake_done) {
-        auto msg =  generate_server_status( 30, 1920,1080, 0, bitrates[compression_k]);
+        auto msg =  generate_server_status( 15, 1920,1080, 0, bitrates[compression_k]);
         publisher_adaptative_->publish(msg);
 
         // Publicar el mensaje
