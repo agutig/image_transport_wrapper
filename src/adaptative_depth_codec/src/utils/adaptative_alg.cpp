@@ -157,7 +157,7 @@ double BitrateCalculator::calculate_bitrate_to_request()
         double bitrate = calculate_mean(bitrate_buffer);
 
 
-        double extra_permited_latency = 0.1;
+        double extra_permited_latency = 0.05; //Latency asociated to procesing and channel.
         double epsilon_margin = 0.2; //20%
         double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
         double relative_capacity = media_time / latency;
@@ -200,8 +200,8 @@ void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_inter
     }
     last_message_time = now;
 
-    add_to_buffer( latency_buffer,latency , 5);
-    add_to_buffer(bitrate_buffer,actual_bitrate,5);
+    add_to_buffer( latency_buffer,latency , frame_rate);
+    add_to_buffer(bitrate_buffer,actual_bitrate,frame_rate);
 
 }
 
