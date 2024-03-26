@@ -10,11 +10,11 @@
 #include "coded_interfaces/msg/rleimg.hpp"
 
 coded_interfaces::msg::Adaptative generate_client_handshake(int fps=0, int height=0, int weight=0, int frame_type=0, double max_bit_rate=0);
-coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const std::string& error_msg);
-coded_interfaces::msg::Adaptative generate_server_status(int fps=0, int height=0, int weight=0, int frame_type=0, double max_bit_rate=0);
+coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const std::string& error_msg ,  double procesing_time);
+coded_interfaces::msg::Adaptative generate_server_status(int fps=0, int height=0, int weight=0, int frame_type=0, double max_bit_rate=0 , double procesing_time=0.1);
 coded_interfaces::msg::Adaptative generate_client_status(int fps=0, int height=0, int weight=0, int frame_type=0, double max_bit_rate=0);
 
-std::tuple<std::string, bool> select_k(std::string& msg_json);
+std::tuple<std::string, bool> select_k(std::string& msg_json, std::string compression_k);
 
 //
 
@@ -23,6 +23,7 @@ public:
     rclcpp::Clock::SharedPtr clock_; // Usar un shared_ptr para el reloj
     rclcpp::Time last_message_time;  // Ya no necesita inicialización por defecto aquí
     int frame_rate;
+    double processing_time;    
     std::vector<float> latency_buffer;
     std::vector<float> bitrate_buffer;
 

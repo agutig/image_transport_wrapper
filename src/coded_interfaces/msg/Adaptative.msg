@@ -11,6 +11,7 @@ string msg_json  # JSON formatted message
 # weigth = ...nan
 # frame_type = progressive/ interlaced nan
 # max_bit_rate =   ... nan  bps
+# procesing_time =...0.1 byd efault
 
 
 # Handshake   (type 0) + server content --> Acept/reject request
@@ -28,6 +29,7 @@ string msg_json  # JSON formatted message
 # weigth =
 # frame_type = progressive/ interlaced
 # max_bit_rate =    bps
+# procesing_time =...
 
 
 #sync (type 2) + server --> Refresh how data its being sended.

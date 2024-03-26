@@ -219,12 +219,14 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
     return dctImage;
 }
 
-std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , float compression_k) {
+std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , std::string compression_k) {
     /*
     Codes a msg image into a rleimg message wich contais an encoded version of an image into a process of compresion and
     a rle codification.
     */
 
+
+    float compression_k_float = std::stof(compression_k);
     cv_bridge::CvImagePtr cv_ptr;
     try {
         cv_ptr = cv_bridge::toCvCopy(frame, sensor_msgs::image_encodings::MONO16);
@@ -235,8 +237,9 @@ std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::m
 
     cv::Mat &mat = cv_ptr->image;
     
-    mat = DCT_coding(mat, compression_k);
+    mat = DCT_coding(mat, compression_k_float);
     auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat));
+
 
     return rle_msg_ptr;
 }

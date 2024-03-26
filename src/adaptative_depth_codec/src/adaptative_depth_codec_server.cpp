@@ -15,7 +15,9 @@ const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
 
 bool handshake_done = false;
-float compression_k = 1;
+std::string compression_k = "5";
+
+double processing_video_time = 0.2;
 
 class adaptative_depth_codec_server : public rclcpp::Node
 {
@@ -50,7 +52,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
 
-    this -> declare_parameter<float>("compression_k", 2); //This param can be managed from outside.Make this value bigger for higher compression.
+    this -> declare_parameter<std::string>("compression_k", compression_k); //This param can be managed from outside.Make this value bigger for higher compression.
     // If k<2 i can be bigger than the original data
 
     // Define the QoS profile
@@ -68,9 +70,16 @@ public:
         if (handshake_done){
           //
           //RCLCPP_INFO(this->get_logger(), "sending video...");
+          auto start_time = std::chrono::high_resolution_clock::now();
+
           this -> get_parameter("compression_k", compression_k);
           auto codec_msg = to_code_frame(msg ,compression_k) ;
           publisher_->publish(*codec_msg);
+
+          auto end_time = std::chrono::high_resolution_clock::now();
+          processing_video_time = std::chrono::duration<double>(end_time - start_time).count();
+          //std::cout << "Proceing time: " << processing_video_time << std::endl;
+
         }else {
           RCLCPP_INFO(this->get_logger(), "Reciving video...Waiting for handshake");
         }
@@ -98,23 +107,25 @@ private:
           if (msg->msg_type == 0){
 
             RCLCPP_WARN(this->get_logger(), "Received Handshake: %d", msg->msg_type);
-            auto result = select_k(msg->msg_json);
+            this -> get_parameter("compression_k", compression_k);
+            auto result = select_k(msg->msg_json, compression_k);
 
-            float update_k_value = std::stof(std::get<0>(result)); 
+            std::string update_k_value = std::get<0>(result); 
             //coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result); //already returns a handshake msg
             handshake_done = std::get<1>(result);
             
-            publisher_adaptative_->publish(generate_server_handshake(handshake_done, ""));
+            publisher_adaptative_->publish(generate_server_handshake(handshake_done, "", processing_video_time));
             this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
-            RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %f", update_k_value);
+            RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %s", update_k_value.c_str());
 
             RCLCPP_INFO(this->get_logger(), "Sending coded video on: %s", TOPIC_IN.c_str());
 
           } else if (msg->msg_type == 1) {
 
               RCLCPP_INFO(this->get_logger(), "Received a type 1 message.");
-              auto result = select_k(msg->msg_json);
-              float update_k_value = std::stof(std::get<0>(result)); 
+              this -> get_parameter("compression_k", compression_k);
+              auto result = select_k(msg->msg_json,compression_k);
+              std::string update_k_value = std::get<0>(result); 
               this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
               std::cout << "New profile K: " << update_k_value << std::endl;
 
@@ -132,7 +143,8 @@ private:
 
     //This function will send status messages to the client
     if (handshake_done) {
-        auto msg =  generate_server_status( 15, 1920,1080, 0, bitrates[compression_k]);
+        this -> get_parameter("compression_k", compression_k);
+        auto msg =  generate_server_status( 15, 1920,1080, 0, 0, processing_video_time);
         publisher_adaptative_->publish(msg);
 
         // Publicar el mensaje

@@ -28,7 +28,7 @@ coded_interfaces::msg::Adaptative generate_client_handshake(int fps  , int heigh
     return message;
 }
 
-coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const std::string& error_msg) {
+coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const std::string& error_msg, double processing_time) {
     auto message = coded_interfaces::msg::Adaptative();
     message.role = "server";
     message.msg_type = 0; // Ajusta según tu definición de msg_type.
@@ -36,6 +36,7 @@ coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const
     nlohmann::json j;
     j["accepted"] = accepted; // Corregido el typo de "acepted" a "accepted"
     j["msg"] = error_msg; // Correctamente asignado a error_msg.
+    j["processing_time"] = processing_time;
 
     std::string s = j.dump();
     message.msg_json = s;
@@ -43,7 +44,7 @@ coded_interfaces::msg::Adaptative generate_server_handshake(bool accepted, const
     return message;
 }
 
-coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, int width, int frame_type, double max_bit_rate) {
+coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, int width, int frame_type, double max_bit_rate, double processing_time) {
     auto message = coded_interfaces::msg::Adaptative();
     message.role = "server"; // Asumiendo que el rol es necesario como en el mensaje anterior
     message.msg_type = 1; // Ajusta según tu definición de msg_type para este tipo de mensaje
@@ -54,6 +55,7 @@ coded_interfaces::msg::Adaptative generate_server_status(int fps, int height, in
     j["width"] = width;
     j["frame_type"] = frame_type; // Asume valores "progressive" o "interlaced"
     j["max_bit_rate"] = max_bit_rate;
+    j["processing_time"] = processing_time;
 
     message.msg_json = j.dump(); // Serializa el objeto JSON a string
 
@@ -78,8 +80,121 @@ coded_interfaces::msg::Adaptative generate_client_status(int fps, int height, in
 }
 
 
+std::string findNextKey(const nlohmann::json& codecConfigs, const std::string& currentKey) {
+    int currentKeyInt = std::stoi(currentKey);
+    std::string nextKey = "0"; // Valor predeterminado que indica no encontrado
+    int minDifference = std::numeric_limits<int>::max();
+    
+    for (auto& el : codecConfigs.items()) {
+        int keyInt = std::stoi(el.key());
+        if (keyInt > currentKeyInt && keyInt - currentKeyInt < minDifference) {
+            nextKey = el.key();
+            minDifference = keyInt - currentKeyInt;
+        }
+    }
 
-std::tuple<std::string, bool> select_k(std::string& msg_json) {
+    return nextKey;
+}
+
+// Función para encontrar la clave anterior
+std::string findPreviousKey(const nlohmann::json& codecConfigs, const std::string& currentKey) {
+    int currentKeyInt = std::stoi(currentKey);
+    std::string previousKey = "0"; // Valor predeterminado que indica no encontrado
+    int maxDifference = -std::numeric_limits<int>::max();
+    
+    for (auto& el : codecConfigs.items()) {
+        int keyInt = std::stoi(el.key());
+        if (keyInt < currentKeyInt && currentKeyInt - keyInt > maxDifference) {
+            previousKey = el.key();
+            maxDifference = currentKeyInt - keyInt;
+        }
+    }
+
+    return previousKey;
+}
+
+
+std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actual_k) {
+
+    using json = nlohmann::json;
+    json root;
+
+    std::cout << "msg_json='" << msg_json << "'" << std::endl;
+
+    // Intenta parsear el JSON string a un objeto json
+    try {
+        root = json::parse(msg_json);
+    } catch (json::parse_error& e) {
+        std::cerr << "Error al parsear el JSON: " << e.what() << std::endl;
+        return std::make_tuple("0" , false);
+    }
+
+    // Asume que max_bit_rate es un número y lo obtiene
+    float searchValue = root["max_bit_rate"].get<float>();
+
+   
+    const std::string filename = "src/adaptative_depth_codec/src/utils/codec_configs.json";
+    std::ifstream inputFile(filename);
+    if (!inputFile.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << filename << std::endl;
+        return std::make_tuple("0" , false); // Retorna un string vacío en caso de error
+    }
+
+    // Parsea el archivo JSON
+    json codecConfigs;
+    inputFile >> codecConfigs;
+
+    if (codecConfigs.find(actual_k) == codecConfigs.end()) {
+        std::cerr << "actual_k not found" << std::endl;
+        return std::make_tuple("0", false);
+    }
+
+    float value = codecConfigs[actual_k].get<float>();
+    std::string posibleKey = actual_k; // Valor predeterminado
+    std::string final_key = actual_k; // Valor predeterminado
+
+    if (value > searchValue) {
+        // Busca la siguiente clave mayor
+        posibleKey = findNextKey(codecConfigs, actual_k);
+        std::cout << " - Posible key: " << posibleKey << std::endl;
+        std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
+        std::cout << " Actual key: " << actual_k << std::endl;
+        std::cout << " Valor dic " << value << std::endl;
+        std::cout << " Search value: " << searchValue << std::endl;
+
+        final_key = posibleKey; 
+        /*if ( codecConfigs[posibleKey].get<float>() < searchValue ){
+            // Si el bitrate deseado no supera al bitrate de la nueva key
+            std::cout << "PAsa" << posibleKey << std::endl;
+            final_key = actual_k;
+        }*/
+        return std::make_tuple(final_key, true);
+
+    } else if (value < searchValue) {
+        // Busca la clave anterior
+        std::cout << " - Posible key: " << posibleKey << std::endl;
+        std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
+        std::cout << " Actual key: " << actual_k << std::endl;
+        std::cout << " Valor dic " << value << std::endl;
+        std::cout << " Search value: " << searchValue << std::endl;
+
+        final_key = posibleKey; 
+        if ( codecConfigs[posibleKey].get<float>() > searchValue ){
+            // Si el bitrate deseado no supera al bitrate de la nueva key
+            std::cout << "SE mantiene" << posibleKey << std::endl;
+            final_key = actual_k;
+        }
+        return std::make_tuple(final_key, true);
+        
+    }   
+
+    // Si resultKey sigue siendo actual_k, significa que no se encontró un cambio necesario o posible
+    std::cout << "AQUI" << std::endl;
+    return std::make_tuple(final_key, true);
+}
+
+
+std::tuple<std::string, bool> select_k_2(std::string& msg_json) {
 
     using json = nlohmann::json;
     json root;
@@ -154,12 +269,13 @@ double BitrateCalculator::calculate_bitrate_to_request()
     {
 
         double latency = calculate_mean(latency_buffer);
-        double bitrate = calculate_mean(bitrate_buffer);
+        double bitrate = bitrate_buffer.back();
 
 
-        double extra_permited_latency = 0.06; //Latency asociated to procesing and channel.
+        double extra_permited_latency = 0.001; //Latency asociated to procesing and channel.
         double epsilon_margin = 0.2; //20%
-        double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
+
+        double media_time = processing_time + extra_permited_latency + (1.0/ frame_rate);// Media real time, a time for a frame equals 1/frame rate
         double relative_capacity = media_time / latency;
         double k = (1-epsilon_margin) * relative_capacity;
 
@@ -170,6 +286,7 @@ double BitrateCalculator::calculate_bitrate_to_request()
         std::cout << "framerate: " << frame_rate << std::endl;
         std::cout << "media_time: " << media_time << std::endl;
         std::cout << "Latency: " << latency << std::endl;
+        std::cout << "Procesing time: " << processing_time << " sec" << std::endl;
 
         std::cout << "relative_capacity: " << relative_capacity << std::endl;
 

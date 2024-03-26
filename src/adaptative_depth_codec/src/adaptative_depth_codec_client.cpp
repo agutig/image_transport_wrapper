@@ -4,7 +4,9 @@
 #include "adaptative_depth_codec/adaptative_alg.hpp"
 #include "coded_interfaces/msg/rleimg.hpp"
 #include "coded_interfaces/msg/adaptative.hpp"
+#include <nlohmann/json.hpp>
 
+using json = nlohmann::json;
 
 const std::string TOPIC_IN = "depth_server_camera_image";
 const std::string TOPIC_OUT = "depth_client_camera_image";
@@ -73,9 +75,27 @@ private:
           if (msg->msg_type == 0){
 
             RCLCPP_WARN(this->get_logger(), "Received Handshake: %d", msg->msg_type);
-            handshake_done = true;
 
-          } 
+            try {
+                auto json_obj = json::parse(msg->msg_json);
+                std::cout << json_obj << std::endl;
+                bitrate_calculator.processing_time = json_obj["processing_time"].get<double>();
+                handshake_done = true;
+            }catch (json::parse_error& e) {
+                RCLCPP_ERROR(this->get_logger(), "Parsing error: %s", e.what());
+            }
+
+          } else if (msg->msg_type == 1)
+          {
+            try {
+                auto json_obj = json::parse(msg->msg_json);
+                std::cout << json_obj << std::endl;
+                bitrate_calculator.processing_time = json_obj["processing_time"].get<double>();
+            }catch (json::parse_error& e) {
+                RCLCPP_ERROR(this->get_logger(), "Parsing error: %s", e.what());
+            }
+          }
+          
 
         }
     }
@@ -86,6 +106,7 @@ private:
           // Adaptative topic
           publisher_adaptative_->publish(generate_client_handshake(15,1080,1920,0,1000));
           bitrate_calculator.frame_rate = 15;
+          
       };
     };
 
