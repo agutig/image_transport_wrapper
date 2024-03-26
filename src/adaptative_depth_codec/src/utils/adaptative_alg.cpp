@@ -157,7 +157,7 @@ double BitrateCalculator::calculate_bitrate_to_request()
         double bitrate = calculate_mean(bitrate_buffer);
 
 
-        double extra_permited_latency = 0.05; //Latency asociated to procesing and channel.
+        double extra_permited_latency = 0.06; //Latency asociated to procesing and channel.
         double epsilon_margin = 0.2; //20%
         double media_time = extra_permited_latency + (1.0/ frame_rate) ;// Media real time, a time for a frame equals 1/frame rate
         double relative_capacity = media_time / latency;

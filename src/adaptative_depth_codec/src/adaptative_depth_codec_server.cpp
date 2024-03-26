@@ -33,15 +33,15 @@ class adaptative_depth_codec_server : public rclcpp::Node
 
 std::map<int, double> bitrates = {
     {0, 1000000.0}, 
-    {1, 1000.0},    // K = 1 --> 18 Mbits max
-    {2, 16.0},    // K = 2 --> 16 Mbits max
-    {3, 12.0},    // K = 3 --> 12 Mbits max
-    {4, 8.0},     // K = 4 --> 8 Mbits max
-    {5, 6.0},     // K = 5 --> 6 Mbits max
-    {10, 1.8},    // K = 10 --> 1.8 Mbits max
-    {15, 0.8},    // K = 15 --> 0.8 Mbits max
-    {20, 0.5},    // K = 20 --> 0.5 Mbits max
-    {25, 0.3},    // K = 25 --> 0.3 Mbits max
+    {1, 9.0},    // K = 1 --> 18 Mbits max
+    {2, 8.0},    // K = 2 --> 16 Mbits max
+    {3, 6.0},    // K = 3 --> 12 Mbits max
+    {4, 4.0},     // K = 4 --> 8 Mbits max
+    {5, 3.0},     // K = 5 --> 6 Mbits max
+    {10, 0.9},    // K = 10 --> 1.8 Mbits max
+    {15, 0.4},    // K = 15 --> 0.8 Mbits max
+    {20, 0.25},    // K = 20 --> 0.5 Mbits max
+    {25, 0.15},    // K = 25 --> 0.3 Mbits max
 };
 
 public:
@@ -64,8 +64,6 @@ public:
     subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
       TOPIC_IN, qos,
       [this](sensor_msgs::msg::Image::SharedPtr msg) {
-
-        
 
         if (handshake_done){
           //

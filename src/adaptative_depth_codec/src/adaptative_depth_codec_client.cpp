@@ -85,7 +85,7 @@ private:
       if (!handshake_done){
           // Adaptative topic
           publisher_adaptative_->publish(generate_client_handshake(15,1080,1920,0,1000));
-          bitrate_calculator.frame_rate = 30;
+          bitrate_calculator.frame_rate = 15;
       };
     };
 
@@ -93,7 +93,7 @@ private:
     {
       if (handshake_done and reciving_video){
           double bitrate = this->bitrate_calculator.calculate_bitrate_to_request();
-          publisher_adaptative_->publish(generate_client_status(30,1920,1080,0,bitrate));
+          publisher_adaptative_->publish(generate_client_status(15,1920,1080,0,bitrate));
         
       }
     };
