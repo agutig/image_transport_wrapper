@@ -119,7 +119,7 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
     using json = nlohmann::json;
     json root;
 
-    std::cout << "msg_json='" << msg_json << "'" << std::endl;
+    //std::cout << "msg_json='" << msg_json << "'" << std::endl;
 
     // Intenta parsear el JSON string a un objeto json
     try {
@@ -156,11 +156,13 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
     if (value > searchValue) {
         // Busca la siguiente clave mayor
         posibleKey = findNextKey(codecConfigs, actual_k);
+        /*
         std::cout << " - Posible key: " << posibleKey << std::endl;
         std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
         std::cout << " Actual key: " << actual_k << std::endl;
         std::cout << " Valor dic " << value << std::endl;
         std::cout << " Search value: " << searchValue << std::endl;
+        */
 
         final_key = posibleKey; 
         /*if ( codecConfigs[posibleKey].get<float>() < searchValue ){
@@ -172,16 +174,18 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 
     } else if (value < searchValue) {
         // Busca la clave anterior
+        /*
         std::cout << " - Posible key: " << posibleKey << std::endl;
         std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
         std::cout << " Actual key: " << actual_k << std::endl;
         std::cout << " Valor dic " << value << std::endl;
         std::cout << " Search value: " << searchValue << std::endl;
+        */
 
         final_key = posibleKey; 
         if ( codecConfigs[posibleKey].get<float>() > searchValue ){
             // Si el bitrate deseado no supera al bitrate de la nueva key
-            std::cout << "SE mantiene" << posibleKey << std::endl;
+            //std::cout << "SE mantiene" << posibleKey << std::endl;
             final_key = actual_k;
         }
         return std::make_tuple(final_key, true);
@@ -189,7 +193,7 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
     }   
 
     // Si resultKey sigue siendo actual_k, significa que no se encontró un cambio necesario o posible
-    std::cout << "AQUI" << std::endl;
+
     return std::make_tuple(final_key, true);
 }
 
@@ -199,7 +203,7 @@ std::tuple<std::string, bool> select_k_2(std::string& msg_json) {
     using json = nlohmann::json;
     json root;
 
-    std::cout << "msg_json='" << msg_json << "'" << std::endl;
+    //std::cout << "msg_json='" << msg_json << "'" << std::endl;
 
     // Intenta parsear el JSON string a un objeto json
     try {
