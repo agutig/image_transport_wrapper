@@ -198,7 +198,7 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 }
 
 
-std::tuple<std::string, bool> select_k_2(std::string& msg_json) {
+std::tuple<std::string, bool> select_k_2(std::string& msg_json, std::string compression_k) {
 
     using json = nlohmann::json;
     json root;

@@ -15,6 +15,7 @@ coded_interfaces::msg::Adaptative generate_server_status(int fps=0, int height=0
 coded_interfaces::msg::Adaptative generate_client_status(int fps=0, int height=0, int weight=0, int frame_type=0, double max_bit_rate=0);
 
 std::tuple<std::string, bool> select_k(std::string& msg_json, std::string compression_k);
+std::tuple<std::string, bool> select_k_2(std::string& msg_json, std::string compression_k);
 
 //
 
