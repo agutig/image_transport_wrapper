@@ -100,13 +100,13 @@ std::string findNextKey(const nlohmann::json& codecConfigs, const std::string& c
 std::string findPreviousKey(const nlohmann::json& codecConfigs, const std::string& currentKey) {
     int currentKeyInt = std::stoi(currentKey);
     std::string previousKey = "-1"; // Valor predeterminado que indica no encontrado
-    int maxDifference = -std::numeric_limits<int>::max();
+    int minDifference = std::numeric_limits<int>::max();
     
     for (auto& el : codecConfigs.items()) {
         int keyInt = std::stoi(el.key());
-        if (keyInt < currentKeyInt && currentKeyInt - keyInt > maxDifference) {
+        if (keyInt < currentKeyInt && abs(currentKeyInt- keyInt) < minDifference) {
             previousKey = el.key();
-            maxDifference = currentKeyInt - keyInt;
+            minDifference = abs(currentKeyInt - keyInt);
         }
     }
 
@@ -114,12 +114,12 @@ std::string findPreviousKey(const nlohmann::json& codecConfigs, const std::strin
 }
 
 
-std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actual_k) {
+std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actual_k, nlohmann::json codecConfigs) {
 
     using json = nlohmann::json;
     json root;
 
-    //std::cout << "msg_json='" << msg_json << "'" << std::endl;
+    //std::cout << "json: " << codecConfigs << "'" << std::endl;
 
     // Intenta parsear el JSON string a un objeto json
     try {
@@ -131,18 +131,6 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 
     // Asume que max_bit_rate es un número y lo obtiene
     float searchValue = root["max_bit_rate"].get<float>();
-
-   
-    const std::string filename = "src/adaptative_depth_codec/src/utils/codec_configs.json";
-    std::ifstream inputFile(filename);
-    if (!inputFile.is_open()) {
-        std::cerr << "Error al abrir el archivo: " << filename << std::endl;
-        return std::make_tuple("0" , false); // Retorna un string vacío en caso de error
-    }
-
-    // Parsea el archivo JSON
-    json codecConfigs;
-    inputFile >> codecConfigs;
 
     if (codecConfigs.find(actual_k) == codecConfigs.end()) {
         std::cerr << "actual_k not found" << std::endl;
@@ -156,13 +144,15 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
     if (value > searchValue) {
         // Busca la siguiente clave mayor
         posibleKey = findNextKey(codecConfigs, actual_k);
+        
         /*
-        std::cout << " - Posible key: " << posibleKey << std::endl;
+        std::cout << " Disminuir Posible key: " << posibleKey << std::endl;
         std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
         std::cout << " Actual key: " << actual_k << std::endl;
         std::cout << " Valor dic " << value << std::endl;
         std::cout << " Search value: " << searchValue << std::endl;
         */
+        
 
         if (posibleKey != "-1"){
             final_key = posibleKey; 
@@ -177,13 +167,16 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 
     } else if (value < searchValue) {
         // Busca la clave anterior
+        
+        posibleKey = findPreviousKey(codecConfigs, actual_k);
         /*
-        std::cout << " - Posible key: " << posibleKey << std::endl;
-        std::cout << " Valor dic " << codecConfigs[posibleKey].get<float>() << std::endl;
+        std::cout << " aumentar Posible key: " << posibleKey << std::endl;
+        std::cout << " Posible Valor " << codecConfigs[posibleKey].get<float>() << std::endl;
         std::cout << " Actual key: " << actual_k << std::endl;
         std::cout << " Valor dic " << value << std::endl;
         std::cout << " Search value: " << searchValue << std::endl;
         */
+        
 
         if (posibleKey != "-1"){
             final_key = posibleKey; 
@@ -191,7 +184,7 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 
         if ( codecConfigs[posibleKey].get<float>() > searchValue ){
             // Si el bitrate deseado no supera al bitrate de la nueva key
-            //std::cout << "SE mantiene" << posibleKey << std::endl;
+            //std::cout << "Sw mantiene" << posibleKey << std::endl;
             final_key = actual_k;
         }
         return std::make_tuple(final_key, true);
@@ -314,6 +307,8 @@ double BitrateCalculator::calculate_bitrate_to_request()
 void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_interfaces::msg::Rleimg>& msg){
     
 
+    rclcpp::Time timestamp_msg(msg->timestamp.sec, msg->timestamp.nanosec, RCL_ROS_TIME);
+
     rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
     rclcpp::SerializedMessage serialized_msg;
     serialization.serialize_message(&(*msg), &serialized_msg);
@@ -322,7 +317,8 @@ void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_inter
     size_t message_size_bits = serialized_msg.size() * 8;
 
 
-    auto time_diff = now - last_message_time;
+    //auto time_diff = now - last_message_time; old
+    auto time_diff = (now - timestamp_msg);
     double latency = time_diff.seconds();
 
     double actual_bitrate = 0.0;
@@ -330,6 +326,7 @@ void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_inter
     if (latency > 0) {
         actual_bitrate = static_cast<double>(message_size_bits) / latency / 1e6; // Mbits/sec
     }
+    //std::cout << "Bitrate Estimado: " << static_cast<double>(message_size_bits)/ (1/frame_rate) / 1e6  << " Mbits/sec" << std::endl;
     last_message_time = now;
 
     add_to_buffer( latency_buffer,latency , frame_rate);

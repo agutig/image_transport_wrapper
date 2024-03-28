@@ -20,7 +20,7 @@ std::string compression_k = "5";
 int framerate = 30;
 double target_bit_rate = 18.0;
 double processing_video_time = 0.2;
-
+std::string filename = "src/adaptative_depth_codec/src/utils/codec_configs_30.json";
 
 class adaptative_depth_codec_server : public rclcpp::Node
 {
@@ -102,7 +102,7 @@ private:
 
             RCLCPP_WARN(this->get_logger(), "Received Handshake: %d", msg->msg_type);
             this -> get_parameter("compression_k", compression_k);
-            auto result = select_k(msg->msg_json, compression_k);
+            auto result = select_k(msg->msg_json, compression_k,codecConfigs);
 
             std::string update_k_value = std::get<0>(result); 
             target_bit_rate = codecConfigs[update_k_value];
@@ -121,7 +121,7 @@ private:
 
               RCLCPP_INFO(this->get_logger(), "Received a type 1 message.");
               this -> get_parameter("compression_k", compression_k);
-              auto result = select_k(msg->msg_json,compression_k);
+              auto result = select_k(msg->msg_json,compression_k,codecConfigs);
               std::string update_k_value = std::get<0>(result); 
               target_bit_rate = codecConfigs[update_k_value];
 
@@ -155,7 +155,7 @@ private:
   nlohmann::json load_configuration(){
     using json = nlohmann::json;
 
-    const std::string filename = "src/adaptative_depth_codec/src/utils/codec_configs.json";
+    
     std::ifstream inputFile(filename);
     if (!inputFile.is_open()) {
       std::cerr << "Error al abrir el archivo: " << filename << std::endl;
@@ -190,6 +190,15 @@ int main(int argc, char *argv[])
           framerate = 30;
       }
   }
+
+  if (framerate == 30) {
+    filename = "src/adaptative_depth_codec/src/utils/codec_configs_30.json";
+  }else if (framerate == 15){
+    std::cout << "ACUERDATE QUE PARA 15 FPS NO " << target_bit_rate << std::endl;
+    std::cout << "TIENES AJUSTADO EL BITRATE EN EL ARCHIVO " << target_bit_rate << std::endl;
+    filename = "src/adaptative_depth_codec/src/utils/codec_configs_15.json";
+  }
+
 
 
   rclcpp::init(argc, argv);
