@@ -7,6 +7,7 @@
 #include <tuple>
 #include <chrono>
 #include <map>
+#include <fstream> 
 
 const std::string TOPIC_IN = "depth_camera_image"; //Input topic
 const std::string TOPIC_OUT = "depth_server_camera_image";  //Output topic
@@ -16,8 +17,10 @@ const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
 bool handshake_done = false;
 std::string compression_k = "5";
-
+int framerate = 15;
+double target_bit_rate = 18.0;
 double processing_video_time = 0.2;
+
 
 class adaptative_depth_codec_server : public rclcpp::Node
 {
@@ -33,24 +36,15 @@ class adaptative_depth_codec_server : public rclcpp::Node
 
 //K values and bitrate
 
-std::map<int, double> bitrates = {
-    {0, 1000000.0}, 
-    {1, 9.0},    // K = 1 --> 18 Mbits max
-    {2, 8.0},    // K = 2 --> 16 Mbits max
-    {3, 6.0},    // K = 3 --> 12 Mbits max
-    {4, 4.0},     // K = 4 --> 8 Mbits max
-    {5, 3.0},     // K = 5 --> 6 Mbits max
-    {10, 0.9},    // K = 10 --> 1.8 Mbits max
-    {15, 0.4},    // K = 15 --> 0.8 Mbits max
-    {20, 0.25},    // K = 20 --> 0.5 Mbits max
-    {25, 0.15},    // K = 25 --> 0.3 Mbits max
-};
+nlohmann::json codecConfigs;
 
 public:
   adaptative_depth_codec_server() : Node("adaptative_depth_codec_server")
   {
     RCLCPP_INFO(this->get_logger(), "Listening on: %s", TOPIC_IN.c_str());
     RCLCPP_INFO(this->get_logger(), "Ready to publish on: %s", TOPIC_OUT.c_str());
+
+    codecConfigs = load_configuration();
 
     this -> declare_parameter<std::string>("compression_k", compression_k); //This param can be managed from outside.Make this value bigger for higher compression.
     // If k<2 i can be bigger than the original data
@@ -72,8 +66,8 @@ public:
           //RCLCPP_INFO(this->get_logger(), "sending video...");
           auto start_time = std::chrono::high_resolution_clock::now();
 
-          this -> get_parameter("compression_k", compression_k);
-          auto codec_msg = to_code_frame(msg ,compression_k) ;
+          //this -> get_parameter("compression_k", compression_k);
+          auto codec_msg = to_code_frame(msg ,compression_k,1e6 * target_bit_rate/framerate) ;
           publisher_->publish(*codec_msg);
 
           auto end_time = std::chrono::high_resolution_clock::now();
@@ -111,11 +105,14 @@ private:
             auto result = select_k(msg->msg_json, compression_k);
 
             std::string update_k_value = std::get<0>(result); 
+            target_bit_rate = codecConfigs[update_k_value];
             //coded_interfaces::msg::Adaptative answer_msg = std::get<1>(result); //already returns a handshake msg
             handshake_done = std::get<1>(result);
             
             publisher_adaptative_->publish(generate_server_handshake(handshake_done, "", processing_video_time));
             this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
+            compression_k = update_k_value;
+
             RCLCPP_INFO(this->get_logger(), "Codec configured, k value: %s", update_k_value.c_str());
 
             RCLCPP_INFO(this->get_logger(), "Sending coded video on: %s", TOPIC_IN.c_str());
@@ -126,8 +123,11 @@ private:
               this -> get_parameter("compression_k", compression_k);
               auto result = select_k(msg->msg_json,compression_k);
               std::string update_k_value = std::get<0>(result); 
+              target_bit_rate = codecConfigs[update_k_value];
+
               this->set_parameter(rclcpp::Parameter("compression_k", update_k_value));
-              std::cout << "New profile K: " << update_k_value << std::endl;
+              compression_k = update_k_value;
+              std::cout << "New profile K: " << update_k_value << " New target bitrate: " << target_bit_rate << std::endl;
 
               // Agrega aquí más lógica según sea necesario.
           } else {
@@ -144,12 +144,29 @@ private:
     //This function will send status messages to the client
     if (handshake_done) {
         this -> get_parameter("compression_k", compression_k);
-        auto msg =  generate_server_status( 15, 1920,1080, 0, 0, processing_video_time);
+        auto msg =  generate_server_status( framerate, 1920,1080, 0, 0, processing_video_time);
         publisher_adaptative_->publish(msg);
 
         // Publicar el mensaje
         //publisher_adaptative_->publish(message);
     }
+  }
+
+  nlohmann::json load_configuration(){
+    using json = nlohmann::json;
+
+    const std::string filename = "src/adaptative_depth_codec/src/utils/codec_configs.json";
+    std::ifstream inputFile(filename);
+    if (!inputFile.is_open()) {
+      std::cerr << "Error al abrir el archivo: " << filename << std::endl;
+    }else{
+      // Parsea el archivo JSON
+      json codecConfigs;
+      inputFile >> codecConfigs;
+      return codecConfigs;
+    }
+
+
   }
 
 

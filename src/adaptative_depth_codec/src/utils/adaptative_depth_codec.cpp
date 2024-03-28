@@ -127,7 +127,7 @@ cv::Mat DCT_coding(const cv::Mat& inputImage, float compression_k) {
     return dctImage;
 }
 
-coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
+coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage, const double target_size) {
 
 
     /*
@@ -175,6 +175,16 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage) {
     rclcpp::Clock clock(RCL_SYSTEM_TIME);
     rle_image_msg.timestamp = clock.now();
 
+    int load_size = 8 + 4 + (rle_image_msg.rle_values.size() * 4) + (rle_image_msg.rle_counts.size() * 2);
+
+    std::cout << "Load size: " <<load_size << " Target size: " << target_size << std::endl;
+    if (load_size < target_size) {
+        std::cout << "padded"<< std::endl;
+        size_t padding_size = (target_size - load_size) / 8;
+        rle_image_msg.padding.resize(padding_size, 0x00);
+    }
+
+
 
     return rle_image_msg;
 }
@@ -219,7 +229,7 @@ cv::Mat RLE_to_DCT(const std::vector<std::pair<float, int>>& rleStream, int widt
     return dctImage;
 }
 
-std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , std::string compression_k) {
+std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::msg::Image::SharedPtr& frame , std::string compression_k, double target_size) {
     /*
     Codes a msg image into a rleimg message wich contais an encoded version of an image into a process of compresion and
     a rle codification.
@@ -238,7 +248,7 @@ std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::m
     cv::Mat &mat = cv_ptr->image;
     
     mat = DCT_coding(mat, compression_k_float);
-    auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat));
+    auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat,target_size));
 
 
     return rle_msg_ptr;

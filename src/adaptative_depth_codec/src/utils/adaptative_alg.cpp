@@ -82,7 +82,7 @@ coded_interfaces::msg::Adaptative generate_client_status(int fps, int height, in
 
 std::string findNextKey(const nlohmann::json& codecConfigs, const std::string& currentKey) {
     int currentKeyInt = std::stoi(currentKey);
-    std::string nextKey = "0"; // Valor predeterminado que indica no encontrado
+    std::string nextKey = "-1"; // Valor predeterminado que indica no encontrado
     int minDifference = std::numeric_limits<int>::max();
     
     for (auto& el : codecConfigs.items()) {
@@ -99,7 +99,7 @@ std::string findNextKey(const nlohmann::json& codecConfigs, const std::string& c
 // Función para encontrar la clave anterior
 std::string findPreviousKey(const nlohmann::json& codecConfigs, const std::string& currentKey) {
     int currentKeyInt = std::stoi(currentKey);
-    std::string previousKey = "0"; // Valor predeterminado que indica no encontrado
+    std::string previousKey = "-1"; // Valor predeterminado que indica no encontrado
     int maxDifference = -std::numeric_limits<int>::max();
     
     for (auto& el : codecConfigs.items()) {
@@ -164,7 +164,10 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
         std::cout << " Search value: " << searchValue << std::endl;
         */
 
-        final_key = posibleKey; 
+        if (posibleKey != "-1"){
+            final_key = posibleKey; 
+        }
+            
         /*if ( codecConfigs[posibleKey].get<float>() < searchValue ){
             // Si el bitrate deseado no supera al bitrate de la nueva key
             std::cout << "PAsa" << posibleKey << std::endl;
@@ -182,7 +185,10 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
         std::cout << " Search value: " << searchValue << std::endl;
         */
 
-        final_key = posibleKey; 
+        if (posibleKey != "-1"){
+            final_key = posibleKey; 
+        }
+
         if ( codecConfigs[posibleKey].get<float>() > searchValue ){
             // Si el bitrate deseado no supera al bitrate de la nueva key
             //std::cout << "SE mantiene" << posibleKey << std::endl;
@@ -194,6 +200,8 @@ std::tuple<std::string, bool> select_k(std::string& msg_json, std::string  actua
 
     // Si resultKey sigue siendo actual_k, significa que no se encontró un cambio necesario o posible
 
+    float new_target_rate = codecConfigs[actual_k].get<float>();
+
     return std::make_tuple(final_key, true);
 }
 
@@ -203,6 +211,7 @@ std::tuple<std::string, bool> select_k_2(std::string& msg_json, std::string comp
     using json = nlohmann::json;
     json root;
 
+    std::string evitar_warning_borrar = compression_k;
     //std::cout << "msg_json='" << msg_json << "'" << std::endl;
 
     // Intenta parsear el JSON string a un objeto json
@@ -311,6 +320,9 @@ void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_inter
 
     rclcpp::Time now = clock_->now();
     size_t message_size_bits = serialized_msg.size() * 8;
+
+    std::cout << "Message_size : " << message_size_bits << std::endl;
+
     auto time_diff = now - last_message_time;
     double latency = time_diff.seconds();
 
