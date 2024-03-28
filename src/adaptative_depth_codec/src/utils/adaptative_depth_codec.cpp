@@ -6,6 +6,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "coded_interfaces/msg/rleimg.hpp"
 
+#include "rclcpp/serialization.hpp"
+#include "rclcpp/serialized_message.hpp"
+
+
 
 
 
@@ -175,7 +179,11 @@ coded_interfaces::msg::Rleimg DCT_to_RLE(const cv::Mat& dctImage, const double t
     rclcpp::Clock clock(RCL_SYSTEM_TIME);
     rle_image_msg.timestamp = clock.now();
 
-    int load_size = 8 + 4 + (rle_image_msg.rle_values.size() * 4) + (rle_image_msg.rle_counts.size() * 2);
+
+    rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
+    rclcpp::SerializedMessage serialized_msg;
+    serialization.serialize_message(&(rle_image_msg), &serialized_msg);
+    size_t load_size = serialized_msg.size() * 8;
 
     std::cout << "Load size: " <<load_size << " Target size: " << target_size << std::endl;
     if (load_size < target_size) {
@@ -249,6 +257,13 @@ std::shared_ptr<coded_interfaces::msg::Rleimg>to_code_frame(const sensor_msgs::m
     
     mat = DCT_coding(mat, compression_k_float);
     auto rle_msg_ptr = std::make_shared<coded_interfaces::msg::Rleimg>(DCT_to_RLE(mat,target_size));
+
+
+    rclcpp::Serialization<coded_interfaces::msg::Rleimg> serialization;
+    rclcpp::SerializedMessage serialized_msg;
+    serialization.serialize_message(&(*rle_msg_ptr), &serialized_msg);
+    size_t message_size_bits = serialized_msg.size() * 8;
+    std::cout << "Message_size : " << message_size_bits << std::endl;
 
 
     return rle_msg_ptr;

@@ -17,7 +17,7 @@ const std::string ADAPTATIVE_TOPIC = "depth_adaptative_channel";
 
 bool handshake_done = false;
 std::string compression_k = "5";
-int framerate = 15;
+int framerate = 30;
 double target_bit_rate = 18.0;
 double processing_video_time = 0.2;
 
@@ -180,6 +180,18 @@ private:
 
 int main(int argc, char *argv[])
 {
+
+  //Terminal argument  added
+  for (int i = 1; i < argc; ++i) {
+      if (std::strcmp(argv[i], "-fps") == 0 && i + 1 < argc) {
+          framerate = std::atoi(argv[i + 1]);
+          ++i; // Incrementa i para saltar el valor ya que fue procesado
+      } else {
+          framerate = 30;
+      }
+  }
+
+
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<adaptative_depth_codec_server>());
   rclcpp::shutdown();

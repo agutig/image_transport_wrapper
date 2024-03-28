@@ -321,7 +321,6 @@ void BitrateCalculator::add_msg_data_to_buffer(const std::shared_ptr<coded_inter
     rclcpp::Time now = clock_->now();
     size_t message_size_bits = serialized_msg.size() * 8;
 
-    std::cout << "Message_size : " << message_size_bits << std::endl;
 
     auto time_diff = now - last_message_time;
     double latency = time_diff.seconds();
